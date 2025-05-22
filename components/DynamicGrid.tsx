@@ -1,39 +1,31 @@
 import React from "react";
-import {
-    ScrollView,
-    StyleProp,
-    StyleSheet,
-    View,
-    ViewStyle
-} from "react-native";
+import { ScrollView, StyleProp, StyleSheet, ViewStyle } from "react-native";
 import { ThemedText } from "./ThemedText";
 
-export type DynamicGridItem = {
-  id: string;
-  text?: string;
+type Props<T> = {
+  data: T[];
   style?: StyleProp<ViewStyle>;
-  render?: () => React.ReactElement;
+  renderItem?: (
+    item: T,
+    id: number
+  ) => React.ReactElement | React.ReactElement[];
 };
 
-type Props = {
-  data: DynamicGridItem[];
-};
-
-const DynamicGrid: React.FC<Props> = ({ data }) => {
+function DynamicGrid<T extends any>({ data, renderItem, style }: Props<T>) {
   return (
-    <ScrollView contentContainerStyle={styles.container}>
-      {data.map((item) => (
-        <View key={item.id} style={[styles.item, item.style]}>
-          {item.render ? (
-            item.render()
+    <ScrollView contentContainerStyle={[styles.container, style]}>
+      {data.map((item, id) => (
+        <ScrollView key={id} contentContainerStyle={[styles.container, styles.item]}>
+          {renderItem ? (
+            renderItem(item, id)
           ) : (
-            <ThemedText style={styles.text}>{item.text}</ThemedText>
+            <ThemedText style={styles.text}>{item as string}</ThemedText>
           )}
-        </View>
+        </ScrollView>
       ))}
     </ScrollView>
   );
-};
+}
 
 const styles = StyleSheet.create({
   container: {
