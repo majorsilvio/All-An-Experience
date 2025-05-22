@@ -1,12 +1,18 @@
-import React from 'react';
-import { DimensionValue, ScrollView, StyleSheet, Text, View } from 'react-native';
+import React from "react";
+import {
+    ScrollView,
+    StyleProp,
+    StyleSheet,
+    View,
+    ViewStyle
+} from "react-native";
+import { ThemedText } from "./ThemedText";
 
 export type DynamicGridItem = {
   id: string;
-  label: string;
-  width: DimensionValue;
-  height: number;
-  backgroundColor?: string;
+  text?: string;
+  style?: StyleProp<ViewStyle>;
+  render?: () => React.ReactElement;
 };
 
 type Props = {
@@ -17,18 +23,12 @@ const DynamicGrid: React.FC<Props> = ({ data }) => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       {data.map((item) => (
-        <View
-          key={item.id}
-          style={[
-            styles.item,
-            {
-              width: item.width,
-              height: item.height,
-              backgroundColor: item.backgroundColor || '#4caf50',
-            },
-          ]}
-        >
-          <Text style={styles.text}>{item.label}</Text>
+        <View key={item.id} style={[styles.item, item.style]}>
+          {item.render ? (
+            item.render()
+          ) : (
+            <ThemedText style={styles.text}>{item.text}</ThemedText>
+          )}
         </View>
       ))}
     </ScrollView>
@@ -37,18 +37,17 @@ const DynamicGrid: React.FC<Props> = ({ data }) => {
 
 const styles = StyleSheet.create({
   container: {
-    flexDirection: 'row',
-    flexWrap: 'wrap',
-    padding: 8,
-    gap: 8, // For React Native >= 0.71. If older, use margin manually
+    flexDirection: "row",
+    flexWrap: "wrap",
   },
   item: {
-    alignItems: 'center',
-    justifyContent: 'center',
+    alignItems: "center",
+    justifyContent: "center",
     borderRadius: 8,
+    width: "100%",
   },
   text: {
-    color: '#fff',
+    color: "#fff",
     fontSize: 16,
   },
 });
