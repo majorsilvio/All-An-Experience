@@ -1,5 +1,5 @@
 import { Image } from "expo-image";
-import { Button, StyleSheet } from "react-native";
+import { Button, StyleSheet, View } from "react-native";
 
 import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
@@ -18,10 +18,20 @@ export default function HomeScreen() {
       }
     >
       <ThemedView style={styles.titleContainer}>
-        <ThemedText>🎉 Welcome to All An Experience! 🎉</ThemedText>
+        <ThemedText type="title">🎉 Welcome to All An Experience! 🎉</ThemedText>
       </ThemedView>
 
-       <Button title="Led Lógico" onPress={() => router.push('/games/LogicLed')} />
+      <ThemedView style={styles.stepContainer}>
+        <ThemedText type="subtitle">Nossos Jogos:</ThemedText>
+        {/* Agrupando os botões para melhor espaçamento */}
+        <View style={styles.buttonGroup}>
+          <Button title="Led Lógico" onPress={() => router.push('/games/LogicLed')} />
+          <Button title="Jogo da Memória" onPress={() => router.push('/games/MemoryGame')} />
+          <Button title="Jogo da Velha" onPress={() => router.push('/games/TicTacToe')} />
+          <Button title="Xadrez" onPress={() => router.push('/games/Chess')} />
+        </View>
+      </ThemedView>
+
     </ParallaxScrollView>
   );
 }
@@ -31,10 +41,11 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     gap: 8,
+    marginTop: 8,
   },
   stepContainer: {
-    gap: 8,
-    marginBottom: 8,
+    gap: 16,
+    marginVertical: 16,
   },
   reactLogo: {
     height: 178,
@@ -43,4 +54,7 @@ const styles = StyleSheet.create({
     left: 0,
     position: "absolute",
   },
+  buttonGroup: {
+    gap: 12,
+  }
 });

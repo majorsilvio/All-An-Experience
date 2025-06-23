@@ -1,7 +1,7 @@
 {
   "expo": {
     "name": "IFPE - All-An-Experience",
-    "slug": "IFPE - All-An-Experience",
+    "slug": "ifpeexperience",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
@@ -33,7 +33,9 @@
           "resizeMode": "contain",
           "backgroundColor": "#ffffff"
         }
-      ]
+      ],
+      "expo-web-browser",
+      "expo-sqlite"
     ],
     "experiments": {
       "typedRoutes": true
