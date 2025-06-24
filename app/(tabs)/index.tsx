@@ -1,60 +1,92 @@
-import { Image } from "expo-image";
-import { Button, StyleSheet, View } from "react-native";
-
-import ParallaxScrollView from "@/components/ParallaxScrollView";
 import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import { router } from "expo-router";
+import { Dimensions, FlatList, SafeAreaView, ScrollView, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
-export default function HomeScreen() {
+const games = [
+  {
+    title: "Led Lógico",
+    route: "/games/LogicLed",
+    emoji: "💡",
+    description: "Desafie sua mente",
+  },
+  {
+    title: "Jogo da Memória",
+    route: "/games/MemoryGame",
+    emoji: "🃏",
+    description: "Teste sua memória",
+  },
+  {
+    title: "Jogo da Velha",
+    route: "/games/TicTacToe",
+    emoji: "⭕️",
+    description: "Um clássico rápido",
+  },
+  {
+    title: "Xadrez",
+    route: "/games/Chess",
+    emoji: "♟️",
+    description: "Estratégia e tática",
+  },
+] as const;
+
+// TIPO CORRIGIDO AQUI: A correção de 'typeof games[0]' para 'typeof games[number]' é a chave.
+const GameCard = ({ item }: { item: typeof games[number] }) => {
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/partial-react-logo.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      <ThemedView style={styles.titleContainer}>
-        <ThemedText type="title">🎉 Welcome to All An Experience! 🎉</ThemedText>
-      </ThemedView>
-
-      <ThemedView style={styles.stepContainer}>
-        <ThemedText type="subtitle">Nossos Jogos:</ThemedText>
-        {/* Agrupando os botões para melhor espaçamento */}
-        <View style={styles.buttonGroup}>
-          <Button title="Led Lógico" onPress={() => router.push('/games/LogicLed')} />
-          <Button title="Jogo da Memória" onPress={() => router.push('/games/MemoryGame')} />
-          <Button title="Jogo da Velha" onPress={() => router.push('/games/TicTacToe')} />
-          <Button title="Xadrez" onPress={() => router.push('/games/Chess')} />
+    <TouchableOpacity onPress={() => router.push(item.route)} style={styles.cardContainer}>
+      <ThemedView style={styles.card}>
+        <View style={styles.cardImageContainer}>
+            <Text style={styles.cardEmoji}>{item.emoji}</Text>
+        </View>
+        <View style={styles.cardTextContainer}>
+            <Text style={styles.cardTitle}>{item.title}</Text>
+            <ThemedText style={styles.cardDescription}>{item.description}</ThemedText>
         </View>
       </ThemedView>
+    </TouchableOpacity>
+  );
+};
 
-    </ParallaxScrollView>
+export default function HomeScreen() {
+  const today = new Date();
+  const dateString = today.toLocaleDateString('pt-BR', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+  return (
+    <SafeAreaView style={styles.safeArea}>
+      <ScrollView contentContainerStyle={styles.container}>
+        <View style={styles.headerContainer}>
+            <ThemedText style={styles.headerSubtitle}>{dateString.toUpperCase()}</ThemedText>
+            <Text style={styles.headerTitle}>Jogos</Text>
+        </View>
+        <FlatList
+          data={games}
+          renderItem={GameCard}
+          keyExtractor={(item) => item.title}
+          numColumns={2}
+          scrollEnabled={false}
+          columnWrapperStyle={styles.row}
+        />
+      </ScrollView>
+    </SafeAreaView>
   );
 }
 
+const { width } = Dimensions.get('window');
+const cardMargin = 16;
+const cardWidth = (width - (cardMargin * 3)) / 2;
+
 const styles = StyleSheet.create({
-  titleContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 8,
-    marginTop: 8,
-  },
-  stepContainer: {
-    gap: 16,
-    marginVertical: 16,
-  },
-  reactLogo: {
-    height: 178,
-    width: 290,
-    bottom: 0,
-    left: 0,
-    position: "absolute",
-  },
-  buttonGroup: {
-    gap: 12,
-  }
+  safeArea: { flex: 1, backgroundColor: '#121212' },
+  container: { paddingHorizontal: cardMargin },
+  headerContainer: { paddingVertical: 24, borderBottomWidth: 1, borderBottomColor: '#333', marginBottom: cardMargin },
+  headerSubtitle: { color: '#888', fontWeight: '700', fontSize: 12 },
+  headerTitle: { fontSize: 40, color: '#FFF', fontFamily: 'Orbitron-Bold' },
+  row: { justifyContent: "space-between" },
+  cardContainer: { width: cardWidth, marginBottom: cardMargin },
+  card: { borderRadius: 16, backgroundColor: '#1e1e1e', overflow: 'hidden' },
+  cardImageContainer: { backgroundColor: '#333', width: '100%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center' },
+  cardEmoji: { fontSize: cardWidth * 0.5 },
+  cardTextContainer: { padding: 12 },
+  cardTitle: { fontSize: 18, color: '#FFF', fontFamily: 'Orbitron-Bold', marginBottom: 4 },
+  cardDescription: { fontSize: 14, color: '#888' },
 });
