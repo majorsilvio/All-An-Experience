@@ -9,7 +9,10 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "infoPlist": {
+        "NSFaceIDUsageDescription": "Este aplicativo usa o Face ID para proteger e revelar seu recorde de jogo de forma segura."
+      }
     },
     "android": {
       "adaptiveIcon": {
@@ -36,7 +39,13 @@
       ],
       "expo-web-browser",
       "expo-sqlite",
-      "expo-font"
+      "expo-font",
+      [
+        "expo-local-authentication",
+        {
+          "faceIDPermission": "Permita que o aplicativo use o Face ID para proteger seu recorde."
+        }
+      ]
     ],
     "experiments": {
       "typedRoutes": true
