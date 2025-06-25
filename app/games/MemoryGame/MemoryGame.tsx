@@ -1,7 +1,6 @@
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Stack } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Pressable, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 // --- Importações Nativas ---
@@ -211,7 +210,7 @@ export default function MemoryGameScreen() {
 
   return (
     <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
-      <Stack.Screen options={{ title: 'Genius', headerStyle: { backgroundColor: PALETTE.background_darker }, headerTintColor: PALETTE.textPrimary, headerTitleStyle: { fontFamily: 'Orbitron-Bold' } }}/>
+      
       <StatusBar barStyle="light-content" />
       
       <View style={styles.header}>

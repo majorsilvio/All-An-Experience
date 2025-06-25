@@ -24,3 +24,14 @@ export const Colors = {
     tabIconSelected: tintColorDark,
   },
 };
+
+// A CORREÇÃO É GARANTIR QUE "EXPORT" ESTEJA AQUI
+export const PALETTE = {
+  background: '#1A1A1A',
+  background_darker: '#0D0D0D',
+  primary: '#BFFF00',
+  primary_darker: '#4CAF50',
+  cardBackground: '#2A2A2A',
+  textPrimary: '#F5F5F5',
+  textSecondary: '#AAAAAA',
+};
