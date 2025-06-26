@@ -34,4 +34,5 @@ export const PALETTE = {
   cardBackground: '#2A2A2A',
   textPrimary: '#F5F5F5',
   textSecondary: '#AAAAAA',
+  BallTicTacToe: '#01c4e7',
 };

@@ -1,17 +1,17 @@
 import { Stack, router } from 'expo-router';
 import { Pressable, Text } from 'react-native';
-import { PALETTE } from '../../constants/Colors';
+import { PALETTE } from '../../constants/Colors'; // Ajuste o caminho se necessário
 
 export default function GameLayout() {
   return (
     <Stack
-      // As opções de ESTILO aplicadas a todos os headers continuam aqui
+      // Opções de estilo globais aplicadas a todos os jogos
       screenOptions={{
         headerShown: true,
         headerStyle: {
           backgroundColor: PALETTE.background_darker,
         },
-        headerTintColor: PALETTE.textPrimary, // Cor do título e do botão
+        headerTintColor: PALETTE.textPrimary,
         headerTitleStyle: {
           fontFamily: 'Orbitron-Bold',
           fontSize: 18,
@@ -28,27 +28,14 @@ export default function GameLayout() {
         ),
       }}
     >
-      {/* AQUI definimos o título para cada tela específica.
-        O 'name' deve ser IGUAL ao nome do arquivo (sem o .tsx).
+      {/* Configuração de título individual para cada tela.
+          O 'name' DEVE ser exatamente o nome do arquivo.
       */}
-      <Stack.Screen
-        name="MemoryGame" // Para o arquivo MemoryGame.tsx
-        options={{ title: 'Genius' }} // Este será o ÚNICO título exibido
-      />
-      <Stack.Screen
-        name="Chess" // Para o arquivo Chess.tsx
-        options={{ title: 'Xadrez' }} 
-      />
-      <Stack.Screen
-        name="LogicLed" // Para o arquivo LogicLed.tsx
-        options={{ title: 'Led Lógico' }} 
-      />
-      <Stack.Screen
-        name="TicTacToe" // Para o arquivo TicTacToe.tsx
-        options={{ title: 'Jogo da Velha' }} 
-      />
-      {/* Adicione uma nova linha <Stack.Screen> para cada novo jogo */}
-
+      <Stack.Screen name="Chess" options={{ title: 'Xadrez' }} />
+      <Stack.Screen name="LogicLed" options={{ title: 'Led Lógico' }} />
+      <Stack.Screen name="MemoryGame" options={{ title: 'Genius' }} />
+      <Stack.Screen name="TicTacToe" options={{ title: 'Jogo da Velha' }} />
+      
     </Stack>
   );
 }

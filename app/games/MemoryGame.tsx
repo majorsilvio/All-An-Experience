@@ -29,13 +29,13 @@ const useSounds = () => {
     try {
       for (let i = 0; i < 4; i++) {
         const { sound } = await Audio.Sound.createAsync(
-          require('../../../assets/sounds/tone.wav'), { shouldPlay: false }
+          require('../../assets/sounds/tone.wav'), { shouldPlay: false }
         );
         await sound.setRateAsync(1.0 + i * 0.4, false);
         soundObjects.current[`note${i}`] = sound;
       }
       const { sound: gameOverSound } = await Audio.Sound.createAsync(
-        require('../../../assets/sounds/game-over.wav'), { shouldPlay: false }
+        require('../../assets/sounds/game-over.wav'), { shouldPlay: false }
       );
       soundObjects.current['gameOver'] = gameOverSound;
     } catch (error) {

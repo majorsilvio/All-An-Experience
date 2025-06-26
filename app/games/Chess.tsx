@@ -2,7 +2,6 @@ import { Chess, Color, Piece, PieceSymbol, Square } from 'chess.js';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as LocalAuthentication from 'expo-local-authentication';
-import { Stack } from 'expo-router';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Dimensions, Modal, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
 
@@ -290,7 +289,7 @@ export default function ChessGame() {
   return (
     <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
-        <Stack.Screen options={{ title: "Xadrez", headerStyle: { backgroundColor: PALETTE.background_darker }, headerTintColor: PALETTE.textPrimary, headerTitleStyle: { fontFamily: 'Orbitron-Bold' } }} />
+        
         <StatusBar barStyle="light-content" />
         <PromotionModal visible={isPromotionModalVisible} onPromote={handlePromotion} />
         {renderContent()}
