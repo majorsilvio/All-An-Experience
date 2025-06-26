@@ -1,7 +1,7 @@
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import React, { createContext, ReactNode, useContext, useEffect, useState } from 'react';
-
-const FAVORITES_STORAGE_KEY = '@game_favorites';
+// Importando nossas novas funções de banco de dados síncronas
+import { addFavorite, getFavorites, initDB, removeFavorite } from '@/services/database';
+import * as Haptics from 'expo-haptics';
 
 interface FavoritesContextType {
   favorites: Set<string>;
@@ -16,36 +16,36 @@ export const FavoritesProvider = ({ children }: { children: ReactNode }) => {
   const [favorites, setFavorites] = useState(new Set<string>());
   const [loading, setLoading] = useState(true);
 
-  // Efeito para carregar os favoritos do armazenamento ao iniciar o app
+  // Efeito para carregar os dados. O useEffect em si não pode ser síncrono.
   useEffect(() => {
-    const loadFavorites = async () => {
-      try {
-        const savedFavorites = await AsyncStorage.getItem(FAVORITES_STORAGE_KEY);
-        if (savedFavorites !== null) {
-          setFavorites(new Set(JSON.parse(savedFavorites)));
-        }
-      } catch (e) {
-        console.error("Failed to load favorites.", e);
-      } finally {
-        setLoading(false);
-      }
-    };
-    loadFavorites();
-  }, []);
-
-  const toggleFavorite = async (gameTitle: string) => {
-    const newFavorites = new Set(favorites);
-    if (newFavorites.has(gameTitle)) {
-      newFavorites.delete(gameTitle);
-    } else {
-      newFavorites.add(gameTitle);
-    }
-    setFavorites(newFavorites);
     try {
-      // Salva a nova lista no armazenamento
-      await AsyncStorage.setItem(FAVORITES_STORAGE_KEY, JSON.stringify(Array.from(newFavorites)));
+      setLoading(true);
+      initDB(); // Garante que a tabela exista (síncrono)
+      const savedFavorites = getFavorites(); // Carrega os favoritos do DB (síncrono)
+      setFavorites(savedFavorites);
     } catch (e) {
-      console.error("Failed to save favorites.", e);
+      console.error("Failed to load favorites from database.", e);
+    } finally {
+      setLoading(false);
+    }
+  }, []); // Roda apenas uma vez quando o app inicia
+
+  // A função de alternar agora também é síncrona
+  const toggleFavorite = (gameTitle: string) => {
+    Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+    const newFavorites = new Set(favorites);
+    try {
+      if (newFavorites.has(gameTitle)) {
+        newFavorites.delete(gameTitle);
+        removeFavorite(gameTitle); // Chama a função síncrona
+      } else {
+        newFavorites.add(gameTitle);
+        addFavorite(gameTitle); // Chama a função síncrona
+      }
+      // Atualiza o estado no React para a UI ser reconstruída
+      setFavorites(newFavorites);
+    } catch (e) {
+        console.error("Failed to update favorite in database.", e);
     }
   };
   
