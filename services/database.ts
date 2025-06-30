@@ -1,33 +1,83 @@
 import * as SQLite from 'expo-sqlite';
 
-// Abrindo um banco de dados SÓ para os favoritos, para manter as coisas organizadas.
-const db = SQLite.openDatabaseSync('favorites_library.db');
+// Abre um único banco de dados para todo o aplicativo
+const db = SQLite.openDatabaseSync('games_library.db');
 
-// Função para inicializar o banco de dados. Agora é síncrona.
+/**
+ * Inicializa o banco de dados, criando TODAS as tabelas necessárias.
+ * Esta função deve ser chamada uma vez quando o aplicativo é iniciado.
+ */
 export const initDB = () => {
-  // execSync é ótimo para rodar comandos de setup
   db.execSync(`
     PRAGMA journal_mode = WAL;
+
+    -- Tabela para os jogos favoritados
     CREATE TABLE IF NOT EXISTS favorites (
       id INTEGER PRIMARY KEY NOT NULL,
       gameTitle TEXT UNIQUE NOT NULL
     );
+
+    -- NOVA TABELA: Para salvar o estado dos jogos
+    CREATE TABLE IF NOT EXISTS saved_games (
+      id TEXT PRIMARY KEY NOT NULL, -- Ex: 'chess'
+      fen TEXT NOT NULL,
+      whiteTime INTEGER NOT NULL,
+      blackTime INTEGER NOT NULL,
+      lastPlayed TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+    );
   `);
 };
 
-// Função para buscar todos os favoritos. Agora é síncrona.
+// ===============================================
+// Funções para a tabela 'favorites'
+// ===============================================
+
 export const getFavorites = (): Set<string> => {
   const allRows = db.getAllSync<{ gameTitle: string }>('SELECT gameTitle FROM favorites');
   return new Set(allRows.map(row => row.gameTitle));
 };
 
-// Função para adicionar um favorito. Agora é síncrona.
 export const addFavorite = (title: string) => {
-  // runSync para comandos que não retornam dados
   db.runSync('INSERT OR IGNORE INTO favorites (gameTitle) VALUES (?)', title);
 };
 
-// Função para remover um favorito. Agora é síncrona.
 export const removeFavorite = (title: string) => {
   db.runSync('DELETE FROM favorites WHERE gameTitle = ?', title);
+};
+
+
+// ===============================================
+// Funções para a tabela 'saved_games' (Xadrez)
+// ===============================================
+
+/**
+ * Salva ou atualiza o estado atual do jogo de xadrez.
+ * O 'id' é fixo como 'chess' para ter apenas um slot de save.
+ */
+export const saveChessGame = (fen: string, whiteTime: number, blackTime: number) => {
+  db.runSync(
+    'INSERT OR REPLACE INTO saved_games (id, fen, whiteTime, blackTime) VALUES (?, ?, ?, ?)',
+    'chess',
+    fen,
+    whiteTime,
+    blackTime
+  );
+};
+
+/**
+ * Carrega o estado do jogo de xadrez salvo, se existir.
+ * @returns O objeto do jogo salvo ou null se não houver jogo.
+ */
+export const loadChessGame = (): { fen: string, whiteTime: number, blackTime: number } | null => {
+  const result = db.getFirstSync<{ fen: string, whiteTime: number, blackTime: number }>(
+    "SELECT fen, whiteTime, blackTime FROM saved_games WHERE id = 'chess'"
+  );
+  return result;
+};
+
+/**
+ * Deleta o jogo de xadrez salvo. Útil ao iniciar uma "Nova Partida".
+ */
+export const deleteChessGame = () => {
+  db.runSync("DELETE FROM saved_games WHERE id = 'chess'");
 };
