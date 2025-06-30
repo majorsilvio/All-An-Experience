@@ -7,7 +7,7 @@ import { Alert, Animated, Dimensions, Pressable, SafeAreaView, StatusBar, StyleS
 // Usando o atalho que configuramos, que é mais robusto
 import { PALETTE as AppPalette } from '@/constants/Colors';
 
-// 1. PALETA DE CORES ESPECÍFICA PARA ESTE JOGO (COMBINANDO AS CORES CERTAS)
+// 1. PALETA DE CORES ESPECÍFICA PARA ESTE JOGO (COM AS CORES CORRETAS)
 const PALETTE = {
   ...AppPalette, // Herda todas as cores da paleta principal
   secondary: '#00FFFF', // Garante que o Ciano Vibrante para o 'O' esteja aqui
@@ -59,7 +59,7 @@ const Square = ({ value, onPress, isWinnerSquare }: { value: 'X' | 'O' | null, o
 
   const animatedStyle = { opacity: animValue, transform: [{ scale: animValue }] };
 
-  // CORREÇÃO DA COR DO 'O' ESTÁ AQUI
+  // AJUSTE: Usa PALETTE.secondary para a cor do 'O'
   const markerColor = value === 'X' ? PALETTE.primary : PALETTE.secondary;
 
   return (
@@ -159,6 +159,7 @@ export default function TicTacToeScreen() {
     return (
       <>
         <View style={styles.statusContainer}>
+          {/* AJUSTE: Usa PALETTE.secondary para a cor do 'O' no status */}
           <Text style={[styles.statusText, { color: winnerInfo && winnerInfo.winner !== 'Empate' ? (winnerInfo.winner === 'X' ? PALETTE.primary : PALETTE.secondary) : PALETTE.textSecondary }]}>
             {status}
           </Text>
@@ -216,9 +217,35 @@ const styles = StyleSheet.create({
   startButtonText: { color: PALETTE.background_darker, fontSize: 20, fontFamily: 'Orbitron-Bold', letterSpacing: 2 },
   statusContainer: { flex: 1, justifyContent: 'center' },
   statusText: { fontFamily: 'Orbitron-Bold', fontSize: 24, letterSpacing: 2, textAlign: 'center' },
-  boardContainer: { width: boardSize, height: boardSize, backgroundColor: 'rgba(0,0,0,0.2)', borderRadius: 16, padding: 5, },
-  board: { width: '100%', height: '100%', flexDirection: 'row', flexWrap: 'wrap' },
-  square: { width: '33.333%', height: '33.333%', alignItems: 'center', justifyContent: 'center', borderWidth: 2, borderColor: 'rgba(0,0,0,0.3)' },
+  // AJUSTE: Efeito neon no container do tabuleiro
+  boardContainer: {
+    width: boardSize,
+    height: boardSize,
+    borderRadius: 16,
+    padding: 5,
+    shadowColor: PALETTE.secondary, // Cor do brilho neon
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.6,
+    shadowRadius: 10,
+    elevation: 15,
+  },
+  board: {
+    width: '100%',
+    height: '100%',
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    backgroundColor: 'rgba(0,0,0,0.2)', // Fundo interno um pouco visível
+    borderRadius: 12, // Borda interna arredondada
+  },
+  // AJUSTE: Bordas mais visíveis
+  square: {
+    width: '33.333%',
+    height: '33.333%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: 'rgba(170, 170, 170, 0.2)', // Usando uma cor mais clara da paleta
+  },
   markerContainer: { width: '100%', height: '100%', justifyContent: 'center', alignItems: 'center' },
   winnerMarkerContainer: { backgroundColor: 'rgba(255, 255, 255, 0.15)', borderRadius: 12 },
   squareText: { fontSize: squareSize * 0.6, fontFamily: 'Orbitron-Bold', textShadowRadius: 15, textShadowOffset: { width: 0, height: 0 } },
