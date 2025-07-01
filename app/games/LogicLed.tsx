@@ -1,15 +1,26 @@
-import { Image } from "expo-image";
-import { StyleSheet, TouchableOpacity, View } from "react-native";
+import {
+  Alert,
+  Dimensions,
+  Pressable,
+  StyleSheet,
+  TextInput,
+  TouchableOpacity,
+  View,
+} from "react-native";
 
 import DynamicGrid from "@/components/DynamicGrid";
 import CircleComponent from "@/components/Icons/Circle";
-import ParallaxScrollView from "@/components/ParallaxScrollView";
+import { ThemedButton } from "@/components/ThemedButton";
+import { ThemedText } from "@/components/ThemedText";
 import { ThemedView } from "@/components/ThemedView";
 import WinnerAnimation from "@/components/WinnerAnimation";
 import LogicTable from "@/constants/LogicTable";
-import { Button } from "@react-navigation/elements";
+import { useThemeColor } from "@/hooks/useThemeColor";
 import { router } from "expo-router";
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { IconSymbol } from "@/components/ui/IconSymbol";
+import * as SQLite from "expo-sqlite";
 
 /**
  * Renders the HomeScreen component which represents the main game interface.
@@ -22,17 +33,88 @@ import { useEffect, useState } from "react";
  * @returns A view component displaying the game grid and a winner animation on victory.
  */
 
-export default function LogicLed({
-  level = 10,
-  difficulty = 5,
-}: {
-  level: number;
-  difficulty: number;
-}) {
-  const [data, setData] = useState<boolean[][]>(LogicTable(difficulty));
-  const [gameState, setGameState] = useState<"WINNER" | "PLAYING" | "LOSER">(
-    "PLAYING"
+export default function LogicLed() {
+  const [level, setLevel] = useState(1);
+  const [difficulty, setDifficulty] = useState(1);
+  const [data, setData] = useState<boolean[][]>([]);
+  const [highChanges, setHighChanges] = useState(0);
+  const [changes, setChanges] = useState(0);
+  const [isLoading, setIsLoading] = useState(true);
+  const [gameState, setGameState] = useState<"WINNER" | "PLAYING" | "NEW_GAME">(
+    "NEW_GAME"
   );
+  const db = useMemo(() => SQLite.openDatabaseSync("ledLogic.db"), []);
+
+  const setupDatabase = useCallback(() => {
+    try {
+      // Create table if it doesn't exist
+      console.log("Database setup completed.");
+      db.runSync(
+        "CREATE TABLE IF NOT EXISTS led_logic_most_changes (id INTEGER PRIMARY KEY, highScore INTEGER NOT NULL, level INTEGER NOT NULL, difficulty INTEGER NOT NULL);"
+      );
+
+      db.runSync(
+        "CREATE TABLE IF NOT EXISTS led_logic_restart (id INTEGER PRIMARY KEY, state VARCHAR NOT NULL);"
+      );
+
+      const result = db.getFirstSync<{ count: number }>(
+        "SELECT COUNT(id) as count FROM led_logic_most_changes;"
+      );
+
+      if (result && result.count === 0) {
+        db.runSync(
+          "INSERT INTO led_logic_most_changes (highScore, difficulty, level) VALUES (1, ?, ?);",
+          [difficulty, level]
+        );
+      }
+    } catch (error) {
+      console.error("Database setup error:", error);
+    }
+  }, [db, difficulty, level]);
+
+  const saveHighChanges = useCallback(
+    (score: number) => {
+      db.runSync(
+        "UPDATE led_logic_most_changes SET highScore = ? WHERE difficulty = ? and level = ?;",
+        [score, difficulty, level]
+      );
+    },
+    [db]
+  );
+
+  const getHighChanges = useCallback((): number => {
+    const result = db.getFirstSync<{ highScore: number }>(
+      "SELECT highScore FROM led_logic_most_changes"
+    );
+
+    return result?.highScore ?? 1;
+  }, [db]);
+
+  const saveRestartState = useCallback(
+    (state: string) => {
+      //verificar se ja existe um jogo salvo
+      const result = db.getFirstSync<{ count: number }>(
+        "SELECT COUNT(id) as count FROM led_logic_restart;"
+      );
+      if (result && result.count === 0) {
+        db.runSync("INSERT INTO led_logic_restart (id,state) VALUES (1,?);", [
+          state,
+        ]);
+      } else {
+        db.runSync("UPDATE led_logic_restart SET state = ? WHERE id = 1;", [
+          state,
+        ]);
+      }
+    },
+    [db]
+  );
+
+  const getRestartState = useCallback(() => {
+    const result = db.getFirstSync<{ state: string }>(
+      "SELECT state FROM led_logic_restart where id = 1;"
+    );
+    return result?.state ? JSON.parse(result.state) : [];
+  }, [db]);
   const changeCell = (row: number, col: number) =>
     setData((prevData) => {
       const newData = [...prevData];
@@ -52,118 +134,292 @@ export default function LogicLed({
         }
       });
 
-      if (newData.flat().every((cell) => !cell) && newData.length > 0) {
-        setGameState("WINNER");
+      if (gameState === "PLAYING") {
+        setChanges((prevChanges) => prevChanges + 1);
       }
 
+      if (
+        newData.flat().every((cell) => !cell) &&
+        newData.length > 0 &&
+        gameState === "PLAYING"
+      ) {
+        setGameState("WINNER");
+        if (changes > highChanges) {
+          saveHighChanges(changes);
+        }
+      }
       return newData;
     });
 
-  useEffect(() => {}, [data]);
+  const newGame = async () => {
+    const gridSize = difficulty + 2;
+    setData(LogicTable(gridSize));
 
-  const newGame = () => {
-    for (let i = 0; i < level; i++) {
-      const row = Math.floor(Math.random() * difficulty);
-      const col = Math.floor(Math.random() * difficulty);
-      // console.log(row + 1, col + 1);
-      changeCell(row, col);
+    const levelRandomChanges = level * (difficulty / 0.5);
+    const sortCells = (gridSize: number, before: { row: any; col: any }) => {
+      const sorted = {
+        row: Math.floor(Math.random() * gridSize),
+        col: Math.floor(Math.random() * gridSize),
+      };
+      if (sorted.row === before.row && sorted.col === before.col) {
+        return sortCells(gridSize, before);
+      }
+      return sorted;
+    };
+
+    let sortedBefore = {
+      row: -1,
+      col: -1,
+    };
+
+    for (let i = 0; i < levelRandomChanges; i++) {
+      const sorted = sortCells(gridSize, sortedBefore);
+      sortedBefore = sorted;
+      changeCell(sorted.row, sorted.col);
     }
     setGameState("PLAYING");
+
+    return;
   };
 
-  useEffect(() => {
-    newGame();
-    return () => {};
-  }, []);
+  function handleChange(text: string): void {
+    if (text === "") {
+      setDifficulty(1);
+    } else {
+      setDifficulty(parseInt(text));
+    }
+  }
 
+  const ledOffColor = useThemeColor({ light: "black", dark: "white" }, "icon");
+  const headerColor = useThemeColor({}, "background");
+
+  async function initialize() {
+    try {
+      setIsLoading(true);
+      const hightChangesFromDb = getHighChanges();
+      setHighChanges(hightChangesFromDb);
+      setChanges(0);
+      await newGame();
+    } catch (error) {
+      console.error("Falha na inicialização do jogo:", error);
+      Alert.alert("Erro", "Não foi possível carregar os dados do jogo.");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  useEffect(() => {
+    if (gameState === "PLAYING") {
+      saveRestartState(JSON.stringify(data));
+    }
+  }, [gameState]);
+
+  useEffect(() => {
+    setupDatabase();
+  }, [setupDatabase]);
   return (
-    <ParallaxScrollView
-      headerBackgroundColor={{ light: "#A1CEDC", dark: "#1D3D47" }}
-      contentContainerStyle={{ height: "80%" }}
-      headerImage={
-        <Image
-          source={require("@/assets/images/LedLogico.png")}
-          style={styles.reactLogo}
-        />
-      }
-    >
-      {gameState !== "WINNER" ? (
-        <DynamicGrid
-          data={data}
-          style={{ height: "80%" }}
-          renderItem={(row, index) => {
-            return row.map((item, col) => (
-              <TouchableOpacity
-                key={`grid-item-${index}-${col}`}
-                style={[styles.item, { padding: 8 }]}
-                onPress={() => changeCell(index, col)}
+    <ThemedView style={styles.container}>
+      {gameState !== "NEW_GAME" && (
+        <>
+          <View
+            style={[
+              styles.header,
+              { paddingTop: 100, backgroundColor: headerColor },
+            ]}
+          >
+            <View style={styles.scoreContainer}>
+              <ThemedText style={[styles.scoreLabel]}>DIFICULDADE</ThemedText>
+              <ThemedText style={styles.scoreText}>{difficulty}</ThemedText>
+            </View>
+          </View>
+          <View style={[styles.header, { backgroundColor: headerColor }]}>
+            <View style={styles.scoreContainer}>
+              <ThemedText style={styles.scoreLabel}>NÍVEL</ThemedText>
+              <ThemedText style={styles.scoreText}>{level}</ThemedText>
+            </View>
+            <View style={styles.scoreContainer}>
+              <ThemedText style={[styles.scoreLabel, { fontSize: 10 }]}>
+                RECOMEÇAR
+              </ThemedText>
+              <Pressable
+                onPress={() => {
+                  setData(getRestartState());
+                }}
+                style={({ pressed }) => [
+                  styles.scoreText,
+                  { opacity: pressed ? 0.5 : 1 },
+                ]}
               >
-                <CircleComponent
-                  size={46}
-                  stroke={"black"}
-                  strokeOpacity={0.5}
-                  fill={item ? "yellow" : "black"}
+                <IconSymbol
+                  style={styles.scoreText}
+                  name="restart"
+                  size={24}
+                  color="yellow"
                 />
-              </TouchableOpacity>
-            ));
-          }}
-        />
-      ) : (
-        <View
-          style={{
-            display: "flex",
-            flexDirection: "column",
-            justifyContent: "center",
-            alignItems: "center",
-            height: "80%",
-          }}
-        >
-          <WinnerAnimation />
-        </View>
+              </Pressable>
+            </View>
+            <View style={styles.scoreContainer}>
+              <ThemedText style={styles.scoreLabel}>JOGADAS</ThemedText>
+              <ThemedText
+                style={
+                  changes > highChanges
+                    ? [styles.scoreText, { color: "red" }]
+                    : styles.scoreText
+                }
+              >
+                {changes}
+              </ThemedText>
+            </View>
+          </View>
+        </>
       )}
-      <ThemedView style={styles.stepContainer}>
-        <Button
-          onPress={() => {
-            setData(LogicTable(difficulty));
-            newGame();
-          }}
-        >
-          New Game
-        </Button>
-        <Button onPress={() => router.push('/')}>Tela Inicial</Button>
-      </ThemedView>
-    </ParallaxScrollView>
+      {gameState === "PLAYING" ? (
+        <View>
+          <DynamicGrid
+            contentContainerStyle={{ paddingTop: 70 }}
+            data={data}
+            cellSize={80}
+            renderItem={(item, row, col) => {
+              return (
+                <TouchableOpacity
+                  key={`grid-item-${col}-${row}`}
+                  style={[styles.item, { padding: 4 }]}
+                  onPress={() => changeCell(row, col)}
+                >
+                  <CircleComponent
+                    size={46}
+                    stroke={"black"}
+                    strokeOpacity={0.5}
+                    fill={item ? "yellow" : ledOffColor}
+                  />
+                </TouchableOpacity>
+              );
+            }}
+          />
+        </View>
+      ) : (
+        <ThemedView style={styles.gameActionsContainer}>
+          {gameState === "WINNER" && <WinnerAnimation />}
+          {gameState === "NEW_GAME" && (
+            //form input number to change level
+            <View style={styles.container}>
+              <ThemedText>Dificuldade:</ThemedText>
+              <TextInput
+                onChangeText={handleChange}
+                keyboardType="numeric"
+                maxLength={1}
+                style={styles.input}
+                placeholder={difficulty.toString()}
+              />
+            </View>
+          )}
+          <ThemedView style={[styles.gameActions]}>
+            {gameState === "WINNER" && (
+              <View style={styles.titleContainer}>
+                <ThemedButton
+                  onPress={() => {
+                    setLevel(level + 1);
+                    initialize();
+                  }}
+                  textStyle={{ textAlign: "center" }}
+                  text={"PROXIMO NÍVEL"}
+                />
+              </View>
+            )}
+            <View style={styles.titleContainer}>
+              <ThemedButton
+                onPress={initialize}
+                textStyle={{ textAlign: "center" }}
+                text={gameState === "WINNER" ? "NOVO JOGO" : "INICIAR"}
+              />
+              <ThemedButton
+                textStyle={{ textAlign: "center" }}
+                onPress={() => {
+                  if (gameState === "WINNER") {
+                    setGameState("NEW_GAME");
+                  } else {
+                    router.push("/");
+                  }
+                }}
+                text={gameState === "WINNER" ? "DIFICULDADE" : "VOLTAR"}
+              />
+            </View>
+          </ThemedView>
+        </ThemedView>
+      )}
+    </ThemedView>
   );
 }
+
+const { width, height } = Dimensions.get("window");
 
 const styles = StyleSheet.create({
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 0,
+    paddingLeft: 10,
+    paddingRight: 10,
+    gap: 10,
   },
-  stepContainer: {
-    gap: 8,
+  container: {
     flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width,
+    height,
   },
-  reactLogo: {
-    height: "100%",
-    width: "100%",
-    bottom: 0,
-    left: 0,
-    position: "absolute",
+  input: {
+    borderWidth: 1,
+    borderColor: "#aaa",
+    borderRadius: 8,
+    padding: 10,
+    fontSize: 16,
+    width: width * 0.8,
+    textAlign: "center",
+    backgroundColor: "#fff",
+  },
+  gameActions: {
+    flex: 1,
+    alignItems: "center",
+    justifyContent: "center",
+    flexWrap: "wrap",
+    display: "flex",
+    flexDirection: "row",
+    gap: 8,
   },
   item: {
     alignItems: "center",
     justifyContent: "center",
     borderRadius: 8,
   },
-  bottomBar: {
-    bottom: 0,
-    left: 0,
-    right: 0,
-    backgroundColor: "#fff",
-    borderTopWidth: 1,
-    borderColor: "#ccc",
+  gameActionsContainer: {
+    flex: 1,
+    justifyContent: "center",
+    alignItems: "center",
+    width: "100%",
+  },
+
+  header: {
+    width: "100%",
+    flexDirection: "row",
+    paddingTop: 5,
+    paddingBottom: 10,
+  },
+  scoreContainer: {
+    alignItems: "center",
+    minHeight: 56,
+    justifyContent: "center",
+    flex: 1,
+  },
+  scoreLabel: {
+    fontSize: 14,
+    fontFamily: "Orbitron-Regular",
+    letterSpacing: 2,
+    flex: 1,
+  },
+  scoreText: {
+    flex: 1,
+    fontSize: 32,
+    fontFamily: "Orbitron-Bold",
   },
 });

@@ -1,7 +1,6 @@
 import LottieView from "lottie-react-native";
 import React from "react";
 import { Dimensions, StyleSheet, View } from "react-native";
-import { ThemedText } from "./ThemedText";
 
 const { width } = Dimensions.get("window");
 
@@ -13,10 +12,9 @@ const WinnerGrid: React.FC = () => {
           source={require("@/assets/animations/trophy.json")}
           autoPlay
           loop={true}
-          style={{ width: 300, height: 300 }}
+          style={styles.animation}
         />
       </View>
-      <ThemedText>🎉 You Win! 🎉</ThemedText>
     </View>
   );
 };
@@ -28,8 +26,6 @@ const styles = StyleSheet.create({
     display: "flex",
     justifyContent: "center",
     alignItems: "center",
-    height: "100%",
-    width: "100%",
   },
   row: {},
   animation: {

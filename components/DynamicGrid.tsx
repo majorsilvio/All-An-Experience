@@ -1,46 +1,52 @@
-import React from "react";
-import { ScrollView, StyleProp, StyleSheet, ViewStyle } from "react-native";
-import { ThemedText } from "./ThemedText";
+import React from 'react';
+import { ScrollView, StyleProp, StyleSheet, Text, View, ViewStyle } from 'react-native';
 
 type Props<T> = {
-  data: T[];
-  style?: StyleProp<ViewStyle>;
-  renderItem?: (
-    item: T,
-    id: number
-  ) => React.ReactElement | React.ReactElement[];
+  data: T[][];
+  cellSize?: number;
+  renderItem?: (item: T, rowIndex: number, colIndex: number) => React.ReactNode;
+  contentContainerStyle?: StyleProp<ViewStyle>;
 };
 
-function DynamicGrid<T extends any>({ data, renderItem, style }: Props<T>) {
+const DynamicGrid = <T,>({ data, cellSize = 100, renderItem , contentContainerStyle}: Props<T>) => {
+  const rows = data.length;
+  const columns = Math.max(...data.map(row => row.length));
+
   return (
-    <ScrollView contentContainerStyle={[styles.container, style]}>
-      {data.map((item, id) => (
-        <ScrollView key={id} contentContainerStyle={[styles.container, styles.item]}>
-          {renderItem ? (
-            renderItem(item, id)
-          ) : (
-            <ThemedText style={styles.text}>{item as string}</ThemedText>
-          )}
-        </ScrollView>
-      ))}
+    <ScrollView horizontal contentContainerStyle={contentContainerStyle}>
+      <ScrollView contentContainerStyle={{ width: columns * cellSize, height: rows * cellSize }}>
+        <View style={{ flexDirection: 'column' }}>
+          {data.map((row, rowIdx) => (
+            <View key={`row-${rowIdx}`} style={{ flexDirection: 'row' }}>
+              {Array.from({ length: columns }).map((_, colIdx) => {
+                const item = row[colIdx];
+
+                return (
+                  <View
+                    key={`cell-${rowIdx}-${colIdx}`}
+                    style={[styles.cell, { width: cellSize, height: cellSize }]}
+                  >
+                    {item !== undefined
+                      ? renderItem
+                        ? renderItem(item, rowIdx, colIdx)
+                        : <Text>{`${item}`}</Text>
+                      : null}
+                  </View>
+                );
+              })}
+            </View>
+          ))}
+        </View>
+      </ScrollView>
     </ScrollView>
   );
-}
+};
 
 const styles = StyleSheet.create({
-  container: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-  },
-  item: {
-    alignItems: "center",
-    justifyContent: "center",
-    borderRadius: 8,
-    width: "100%",
-  },
-  text: {
-    color: "#fff",
-    fontSize: 16,
+  cell: {
+    borderColor: '#ccc',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
 });
 
