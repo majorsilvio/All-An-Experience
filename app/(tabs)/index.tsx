@@ -22,6 +22,7 @@ export const games = [
   { title: "Jogo da Memória", route: "/games/MemoryGame", emoji: "🃏", description: "Teste sua memória", category: "Quebra-Cabeça" },
   { title: "Jogo da Velha", route: "/games/TicTacToe", emoji: "⭕️", description: "Um clássico rápido", category: "Clássicos de Tabuleiro" },
   { title: "Xadrez", route: "/games/Chess", emoji: "♟️", description: "Estratégia e tática", category: "Estratégia" },
+  { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "🚀", description: "Desvie dos obstáculos", category: "Ação" },
 ] as const;
 
 export type Game = typeof games[number];
@@ -53,7 +54,7 @@ export const GameCard = ({ item }: { item: Game }) => {
   }
 
   return (
-    <Pressable onPress={() => router.push(item.route)} style={({ pressed }) => [styles.cardContainer, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
+    <Pressable onPress={() => router.push(item.route as any)} style={({ pressed }) => [styles.cardContainer, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
       <View style={styles.card}>
         <LinearGradient colors={[PALETTE.primary_darker, PALETTE.primary]} style={styles.cardImageContainer}>
           <Text style={styles.cardEmoji}>{item.emoji}</Text>
@@ -73,7 +74,7 @@ export const GameCard = ({ item }: { item: Game }) => {
 const FeaturedCard = () => {
     const featuredGame = games[3];
     return (
-        <Pressable onPress={() => router.push(featuredGame.route)} style={({ pressed }) => [ styles.featuredCardContainer, { opacity: pressed ? 0.9 : 1 } ]}>
+        <Pressable onPress={() => router.push(featuredGame.route as any)} style={({ pressed }) => [ styles.featuredCardContainer, { opacity: pressed ? 0.9 : 1 } ]}>
             <LinearGradient colors={['#434343', '#000000']} style={styles.featuredCard}>
                 <View style={styles.featuredTextContainer}><Text style={styles.featuredTitle}>{featuredGame.title}</Text><Text style={styles.featuredDescription}>{featuredGame.description}</Text></View>
                 <Text style={styles.featuredEmoji}>{featuredGame.emoji}</Text>
