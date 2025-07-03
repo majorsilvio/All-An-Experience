@@ -23,6 +23,8 @@ export const games = [
   { title: "Jogo da Velha", route: "/games/TicTacToe", emoji: "⭕️", description: "Um clássico rápido", category: "Clássicos de Tabuleiro" },
   { title: "Xadrez", route: "/games/Chess", emoji: "♟️", description: "Estratégia e tática", category: "Estratégia" },
   { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "🚀", description: "Desvie dos obstáculos", category: "Ação" },
+  { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "🌀", description: "Controle com movimento", category: "Habilidade" },
+
 ] as const;
 
 export type Game = typeof games[number];

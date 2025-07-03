@@ -8,9 +8,8 @@ const db = SQLite.openDatabaseSync('chess_db.db');
  */
 export const initDB = () => {
   try {
-    // Configuração para melhor performance (fora da transação)
     db.execSync('PRAGMA journal_mode = WAL;');
-    
+
     db.withTransactionSync(() => {
       // Tabela para salvar o estado do jogo de xadrez
       db.execSync(`
@@ -23,13 +22,22 @@ export const initDB = () => {
         );
       `);
 
-      //Cosmic Corridor Score
-      db.runSync(`
-    CREATE TABLE IF NOT EXISTS cosmic_corridor_scores (
-        id INTEGER PRIMARY KEY NOT NULL,
-        highScore INTEGER NOT NULL
-    );
-  `);
+      // Labyrinth Score
+      db.execSync(`
+        CREATE TABLE IF NOT EXISTS labyrinth_levels (
+          level_index INTEGER PRIMARY KEY NOT NULL,
+          is_unlocked INTEGER NOT NULL,
+          stars_collected INTEGER NOT NULL DEFAULT 0
+        );
+      `);
+
+      // Cosmic Corridor Score
+      db.execSync(`
+        CREATE TABLE IF NOT EXISTS cosmic_corridor_scores (
+          id INTEGER PRIMARY KEY NOT NULL,
+          highScore INTEGER NOT NULL
+        );
+      `);
 
       // Tabela para os favoritos
       db.execSync(`
@@ -44,8 +52,6 @@ export const initDB = () => {
     throw error;
   }
 };
-
-
 
 /**
  * Salva o estado atual do jogo de xadrez
@@ -72,22 +78,14 @@ export const saveChessGame = (fen: string, whiteTime: number, blackTime: number)
 /**
  * Carrega o jogo salvo do banco de dados
  */
-export const loadChessGame = (): { 
-  fen: string, 
-  whiteTime: number, 
-  blackTime: number 
-} | null => {
+export const loadChessGame = (): { fen: string, whiteTime: number, blackTime: number } | null => {
   try {
-    const result = db.getFirstSync<{ 
-      fen: string, 
-      whiteTime: number, 
-      blackTime: number 
-    }>(
+    const result = db.getFirstSync<{ fen: string, whiteTime: number, blackTime: number }>(
       `SELECT fen, whiteTime, blackTime 
        FROM chess_games 
        WHERE id = 'current_game'`
     );
-    
+
     return result || null;
   } catch (error) {
     console.error('Erro ao carregar jogo:', error);
@@ -161,18 +159,55 @@ export const removeFavorite = (title: string) => {
   }
 };
 
+/**
+ * Cosmic Corridor High Score
+ */
 export const getCosmicCorridorHighScore = (): number => {
-    // Garante que a linha de recorde exista, começando com 0.
-    const initialRecord = db.getFirstSync<{ count: number }>('SELECT COUNT(id) as count FROM cosmic_corridor_scores;');
-    if (initialRecord?.count === 0) {
-        db.runSync('INSERT INTO cosmic_corridor_scores (id, highScore) VALUES (1, 0);');
-        return 0;
-    }
-    const result = db.getFirstSync<{ highScore: number }>("SELECT highScore FROM cosmic_corridor_scores WHERE id = 1");
-    return result?.highScore ?? 0;
+  const initialRecord = db.getFirstSync<{ count: number }>('SELECT COUNT(id) as count FROM cosmic_corridor_scores;');
+  if (initialRecord?.count === 0) {
+    db.runSync('INSERT INTO cosmic_corridor_scores (id, highScore) VALUES (1, 0);');
+    return 0;
+  }
+  const result = db.getFirstSync<{ highScore: number }>("SELECT highScore FROM cosmic_corridor_scores WHERE id = 1");
+  return result?.highScore ?? 0;
 }
 
 export const saveCosmicCorridorHighScore = (score: number) => {
-    // Atualiza o recorde na tabela.
-    db.runSync("UPDATE cosmic_corridor_scores SET highScore = ? WHERE id = 1", score);
+  db.runSync("UPDATE cosmic_corridor_scores SET highScore = ? WHERE id = 1", score);
 }
+
+/**
+ * Labyrinth Levels
+ */
+export const loadLabyrinthLevels = (): { level_index: number, is_unlocked: 1 | 0, stars_collected: number }[] => {
+  // Corrigido: contar level_index e não id
+  const countResult = db.getFirstSync<{ count: number }>('SELECT COUNT(level_index) as count FROM labyrinth_levels;');
+
+  if (countResult?.count === 0) {
+    db.withTransactionSync(() => {
+      db.runSync('INSERT INTO labyrinth_levels (level_index, is_unlocked, stars_collected) VALUES (0, 1, 0);');
+      for (let i = 1; i < 15; i++) {
+        db.runSync('INSERT INTO labyrinth_levels (level_index, is_unlocked, stars_collected) VALUES (?, 0, 0);', i);
+      }
+    });
+  }
+
+  return db.getAllSync('SELECT * FROM labyrinth_levels ORDER BY level_index ASC');
+};
+
+/**
+ * Atualiza o número de estrelas de um nível, apenas se for maior que o recorde anterior.
+ */
+export const updateLabyrinthLevelStars = (levelIndex: number, newStars: number) => {
+  db.runSync(
+    'UPDATE labyrinth_levels SET stars_collected = ? WHERE level_index = ? AND stars_collected < ?',
+    [newStars, levelIndex, newStars]
+  );
+};
+
+/**
+ * Desbloqueia o próximo nível.
+ */
+export const unlockLabyrinthLevel = (levelIndex: number) => {
+  db.runSync('UPDATE labyrinth_levels SET is_unlocked = 1 WHERE level_index = ?', levelIndex);
+};
