@@ -23,6 +23,14 @@ export const initDB = () => {
         );
       `);
 
+      //Cosmic Corridor Score
+      db.runSync(`
+    CREATE TABLE IF NOT EXISTS cosmic_corridor_scores (
+        id INTEGER PRIMARY KEY NOT NULL,
+        highScore INTEGER NOT NULL
+    );
+  `);
+
       // Tabela para os favoritos
       db.execSync(`
         CREATE TABLE IF NOT EXISTS favorites (
@@ -36,6 +44,8 @@ export const initDB = () => {
     throw error;
   }
 };
+
+
 
 /**
  * Salva o estado atual do jogo de xadrez
@@ -150,3 +160,19 @@ export const removeFavorite = (title: string) => {
     throw error;
   }
 };
+
+export const getCosmicCorridorHighScore = (): number => {
+    // Garante que a linha de recorde exista, começando com 0.
+    const initialRecord = db.getFirstSync<{ count: number }>('SELECT COUNT(id) as count FROM cosmic_corridor_scores;');
+    if (initialRecord?.count === 0) {
+        db.runSync('INSERT INTO cosmic_corridor_scores (id, highScore) VALUES (1, 0);');
+        return 0;
+    }
+    const result = db.getFirstSync<{ highScore: number }>("SELECT highScore FROM cosmic_corridor_scores WHERE id = 1");
+    return result?.highScore ?? 0;
+}
+
+export const saveCosmicCorridorHighScore = (score: number) => {
+    // Atualiza o recorde na tabela.
+    db.runSync("UPDATE cosmic_corridor_scores SET highScore = ? WHERE id = 1", score);
+}
