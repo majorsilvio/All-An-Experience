@@ -6,6 +6,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { Accelerometer } from 'expo-sensors';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
+import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
 
 // --- CONSTANTES E TIPOS ---
 const PALETTE = { ...AppPalette, danger: '#FF4757', wall: '#4B4B4B', secondary: '#00FFFF', star: '#FFD700' };
@@ -15,6 +16,11 @@ const HOLE_SIZE = 40;
 const STAR_SIZE = 25;
 const SENSITIVITY = 15;
 const INITIAL_LIVES = 5;
+
+// Configurações de zoom
+const MIN_SCALE = 0.5;  // Zoom mínimo (50%)
+const MAX_SCALE = 3.0;  // Zoom máximo (300%)
+const DEFAULT_SCALE = 1.0; // Escala padrão
 
 // Safety margins to keep elements visible and playable
 const SAFETY_MARGIN = 20;
@@ -74,6 +80,10 @@ export default function LabyrinthScreen() {
   const currentBallPosition = useRef({ x: 0, y: 0 });
   const isColliding = useRef(false);
 
+  // Refs para controle de zoom
+  const scale = useRef(new Animated.Value(DEFAULT_SCALE)).current;
+  const lastScale = useRef(DEFAULT_SCALE);
+
   useEffect(() => {
     const initializeLevels = async () => {
       try {
@@ -99,6 +109,7 @@ export default function LabyrinthScreen() {
     setLives(INITIAL_LIVES);
     setCollectedStars(new Set());
     isColliding.current = false; // Reset collision state
+    resetZoom(); // Reset zoom when starting new level
     
     const level = LEVELS[levelIndex];
     // Ensure ball starts in safe area
@@ -151,6 +162,32 @@ export default function LabyrinthScreen() {
       isColliding.current = false; 
     }, 300);
   }, [currentLevel, collectedStars]);
+
+  // Handlers para gesto de pinça (zoom)
+  const onPinchGestureEvent = Animated.event(
+    [{ nativeEvent: { scale: scale } }],
+    { useNativeDriver: false }
+  );
+
+  const onPinchHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.oldState === State.ACTIVE) {
+      let newScale = lastScale.current * event.nativeEvent.scale;
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      
+      lastScale.current = newScale;
+      scale.setValue(newScale);
+    }
+  };
+
+  // Função para resetar o zoom
+  const resetZoom = () => {
+    lastScale.current = DEFAULT_SCALE;
+    Animated.timing(scale, {
+      toValue: DEFAULT_SCALE,
+      duration: 300,
+      useNativeDriver: false
+    }).start();
+  };
 
   useEffect(() => {
     let subscription: Subscription | null = null;
@@ -245,34 +282,48 @@ export default function LabyrinthScreen() {
               <View style={styles.starHudContainer}>
                 {Array(3).fill(0).map((_, i) => <Text key={i} style={[styles.starIcon, i < collectedStars.size && styles.starIconCollected]}>★</Text>)}
               </View>
+              <Pressable onPress={resetZoom} style={styles.zoomResetButton}>
+                <Text style={styles.zoomResetButtonText}>🔍</Text>
+              </Pressable>
               <View style={styles.livesContainer}>{Array(lives).fill(0).map((_, i) => <Text key={i} style={styles.lifeIcon}>❤️</Text>)}</View>
             </View>
             <View style={styles.gameBoard}>
-              {currentLevelData.walls.map((wall, index) => <View key={index} style={[styles.wall, { left: wall.x, top: wall.y, width: wall.width, height: wall.height }]} />)}
-              {currentLevelData.stars.map(star => {
-                // Only render stars that are not collected and in safe positions
-                if (collectedStars.has(star.id)) return null;
-                
-                // Ensure star is in safe area and not overlapping walls
-                const safeX = Math.max(SAFE_AREA.minX, Math.min(star.x, SAFE_AREA.maxX - STAR_SIZE));
-                const safeY = Math.max(SAFE_AREA.minY, Math.min(star.y, SAFE_AREA.maxY - STAR_SIZE));
-                
-                // Check if star would overlap with walls
-                const isStarSafe = isPositionSafe(safeX, safeY, STAR_SIZE, STAR_SIZE, currentLevelData.walls);
-                if (!isStarSafe) return null; // Don't render stars that would be inside walls
-                
-                return (
-                  <Text key={star.id} style={[styles.star, { left: safeX, top: safeY }]}>★</Text>
-                );
-              })}
-              
-              {/* Ensure hole is positioned safely */}
-              <View style={[styles.hole, { 
-                left: Math.max(SAFE_AREA.minX, Math.min(currentLevelData.hole.x, SAFE_AREA.maxX - HOLE_SIZE)), 
-                top: Math.max(SAFE_AREA.minY, Math.min(currentLevelData.hole.y, SAFE_AREA.maxY - HOLE_SIZE)) 
-              }]} />
-              
-              <Animated.View style={[styles.ball, ballPosition.getLayout()]} />
+              <PinchGestureHandler
+                onGestureEvent={onPinchGestureEvent}
+                onHandlerStateChange={onPinchHandlerStateChange}>
+                <Animated.View style={[
+                  styles.gameBoardContent,
+                  {
+                    transform: [{ scale: scale }]
+                  }
+                ]}>
+                  {currentLevelData.walls.map((wall, index) => <View key={index} style={[styles.wall, { left: wall.x, top: wall.y, width: wall.width, height: wall.height }]} />)}
+                  {currentLevelData.stars.map(star => {
+                    // Only render stars that are not collected and in safe positions
+                    if (collectedStars.has(star.id)) return null;
+                    
+                    // Ensure star is in safe area and not overlapping walls
+                    const safeX = Math.max(SAFE_AREA.minX, Math.min(star.x, SAFE_AREA.maxX - STAR_SIZE));
+                    const safeY = Math.max(SAFE_AREA.minY, Math.min(star.y, SAFE_AREA.maxY - STAR_SIZE));
+                    
+                    // Check if star would overlap with walls
+                    const isStarSafe = isPositionSafe(safeX, safeY, STAR_SIZE, STAR_SIZE, currentLevelData.walls);
+                    if (!isStarSafe) return null; // Don't render stars that would be inside walls
+                    
+                    return (
+                      <Text key={star.id} style={[styles.star, { left: safeX, top: safeY }]}>★</Text>
+                    );
+                  })}
+                  
+                  {/* Ensure hole is positioned safely */}
+                  <View style={[styles.hole, { 
+                    left: Math.max(SAFE_AREA.minX, Math.min(currentLevelData.hole.x, SAFE_AREA.maxX - HOLE_SIZE)), 
+                    top: Math.max(SAFE_AREA.minY, Math.min(currentLevelData.hole.y, SAFE_AREA.maxY - HOLE_SIZE)) 
+                  }]} />
+                  
+                  <Animated.View style={[styles.ball, ballPosition.getLayout()]} />
+                </Animated.View>
+              </PinchGestureHandler>
             </View>
 
             {(gameState === 'levelComplete' || gameState === 'gameOver') && (
@@ -285,6 +336,7 @@ export default function LabyrinthScreen() {
                   <Pressable onPress={() => handleLevelSelect(currentLevel + 1)} style={styles.menuButton}><Text style={styles.menuButtonText}>PRÓXIMO NÍVEL</Text></Pressable>}
                 <Pressable onPress={() => {
                   setLevelProgress(loadLabyrinthLevels()); // Refresh level progress
+                  resetZoom(); // Reset zoom when going back to menu
                   setGameState('level_selection');
                 }} style={[styles.menuButton, { marginTop: 10, backgroundColor: PALETTE.cardBackground }]}><Text style={[styles.menuButtonText, { color: 'white' }]}>MENU DE NÍVEIS</Text></Pressable>
               </View>
@@ -295,11 +347,13 @@ export default function LabyrinthScreen() {
   };
 
   return (
-    <LinearGradient colors={[PALETTE.background_darker, PALETTE.background]} style={styles.container}>
-      <SafeAreaView style={styles.safeArea}>
-        {renderContent()}
-      </SafeAreaView>
-    </LinearGradient>
+    <GestureHandlerRootView style={{ flex: 1 }}>
+      <LinearGradient colors={[PALETTE.background_darker, PALETTE.background]} style={styles.container}>
+        <SafeAreaView style={styles.safeArea}>
+          {renderContent()}
+        </SafeAreaView>
+      </LinearGradient>
+    </GestureHandlerRootView>
   );
 }
 
@@ -378,6 +432,18 @@ const styles = StyleSheet.create({
     height: HUD_HEIGHT - 40, // Ensure HUD fits in reserved space
   },
   hudText: { fontWeight: 'bold', fontSize: 18, color: PALETTE.textPrimary },
+  zoomResetButton: {
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    borderRadius: 20,
+    padding: 8,
+    minWidth: 40,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  zoomResetButtonText: {
+    fontSize: 16,
+    color: 'white',
+  },
   livesContainer: { flexDirection: 'row' },
   lifeIcon: { fontSize: 24, marginLeft: 5, textShadowColor: 'red', textShadowRadius: 5 },
   gameBoard: { 
@@ -385,6 +451,11 @@ const styles = StyleSheet.create({
     width: '100%', 
     height: '100%',
     marginTop: HUD_HEIGHT, // Account for HUD space
+  },
+  gameBoardContent: {
+    flex: 1,
+    width: '100%',
+    height: '100%',
   },
   ball: { position: 'absolute', width: BALL_SIZE, height: BALL_SIZE, borderRadius: BALL_SIZE / 2, backgroundColor: PALETTE.primary, shadowColor: PALETTE.primary, shadowRadius: 10, shadowOpacity: 1, elevation: 10 },
   hole: { position: 'absolute', width: HOLE_SIZE, height: HOLE_SIZE, borderRadius: HOLE_SIZE / 2, backgroundColor: 'black', borderWidth: 3, borderColor: PALETTE.secondary },
