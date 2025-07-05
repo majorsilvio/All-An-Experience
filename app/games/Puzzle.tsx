@@ -1,3 +1,4 @@
+import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
@@ -59,12 +60,29 @@ export default function PuzzleScreen() {
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
   const [usedImageIndexes, setUsedImageIndexes] = useState<number[]>([]);
   const [showReferenceImage, setShowReferenceImage] = useState(false);
+  const [showVictoryAnimation, setShowVictoryAnimation] = useState(false);
 
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
+  const victoryAnim = useRef(new Animated.Value(0)).current;
 
   // --- EFEITOS ---
   useEffect(() => {
+    // Configura o áudio
+    const setupAudio = async () => {
+      try {
+        await Audio.setAudioModeAsync({
+          allowsRecordingIOS: false,
+          staysActiveInBackground: false,
+          playsInSilentModeIOS: true,
+          shouldDuckAndroid: true,
+          playThroughEarpieceAndroid: false,
+        });
+      } catch (error) {
+        console.error('Erro ao configurar áudio:', error);
+      }
+    };
+
     // Carrega os recordes do banco de dados ao iniciar
     const loadRecords = async () => {
       try {
@@ -82,6 +100,8 @@ export default function PuzzleScreen() {
         setIsLoading(false);
       }
     };
+
+    setupAudio();
     loadRecords();
   }, []);
 
@@ -163,7 +183,24 @@ export default function PuzzleScreen() {
     if (isSolved) {
       if (timerInterval.current) clearInterval(timerInterval.current);
       updateRecord();
-      setGameState('won');
+      
+      // Inicia a animação de vitória
+      setShowVictoryAnimation(true);
+      playVictorySound();
+      
+      // Animação de entrada da imagem completa
+      Animated.sequence([
+        Animated.timing(victoryAnim, {
+          toValue: 1,
+          duration: 800,
+          useNativeDriver: true,
+        }),
+        Animated.delay(2000), // Mostra a imagem por 2 segundos
+      ]).start(() => {
+        setShowVictoryAnimation(false);
+        victoryAnim.setValue(0);
+        setGameState('won');
+      });
     }
   };
 
@@ -186,6 +223,24 @@ export default function PuzzleScreen() {
   };
 
   // --- FUNÇÕES AUXILIARES ---
+  const playVictorySound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/sounds/winner.wav')
+      );
+      await sound.playAsync();
+      
+      // Libera a memória após o som terminar
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.error('Erro ao tocar som de vitória:', error);
+    }
+  };
+
   const shuffle = (array: Piece[]): Piece[] => {
     let shuffledArray;
     let isSolved;
@@ -277,6 +332,57 @@ export default function PuzzleScreen() {
           </View>
         </Modal>
 
+        {/* Modal da Animação de Vitória */}
+        <Modal transparent={true} visible={showVictoryAnimation} animationType="none">
+          <View style={styles.victoryModalContainer}>
+            <Animated.View 
+              style={[
+                styles.victoryImageContainer,
+                {
+                  opacity: victoryAnim,
+                  transform: [
+                    {
+                      scale: victoryAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [0.3, 1],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              {image && (
+                <View style={styles.victoryImageWrapper}>
+                  <Image 
+                    source={image} 
+                    style={styles.victoryImage}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
+            </Animated.View>
+            <Animated.View 
+              style={[
+                styles.victoryTextContainer,
+                {
+                  opacity: victoryAnim,
+                  transform: [
+                    {
+                      translateY: victoryAnim.interpolate({
+                        inputRange: [0, 1],
+                        outputRange: [50, 0],
+                      }),
+                    },
+                  ],
+                },
+              ]}
+            >
+              <Text style={styles.victoryText}>PARABÉNS!</Text>
+              <Text style={styles.victorySubText}>Quebra-cabeça completado!</Text>
+            </Animated.View>
+          </View>
+        </Modal>
+
         {/* Modal da Imagem de Referência */}
         <Modal transparent={true} visible={showReferenceImage} animationType="fade">
           <View style={styles.referenceModalContainer}>
@@ -351,5 +457,57 @@ const styles = StyleSheet.create({
     width: '100%', 
     height: '100%',
     borderRadius: 10,
+  },
+  // Estilos para a animação de vitória
+  victoryModalContainer: {
+    flex: 1,
+    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    padding: 20,
+  },
+  victoryImageContainer: {
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '90%',
+    maxWidth: 400,
+    flex: 1,
+    maxHeight: '70%',
+  },
+  victoryImageWrapper: {
+    width: '100%',
+    height: '100%',
+    justifyContent: 'center',
+    alignItems: 'center',
+    borderRadius: 15,
+    borderWidth: 3,
+    borderColor: PALETTE.primary,
+    overflow: 'hidden',
+    backgroundColor: 'rgba(0, 0, 0, 0.3)',
+  },
+  victoryImage: {
+    width: '100%',
+    height: '100%',
+  },
+  victoryTextContainer: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    position: 'absolute',
+    bottom: 50,
+    left: 0,
+    right: 0,
+  },
+  victoryText: {
+    fontSize: 32,
+    fontFamily: 'Orbitron-Bold',
+    color: PALETTE.primary,
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  victorySubText: {
+    fontSize: 18,
+    fontFamily: 'Orbitron-Regular',
+    color: PALETTE.textSecondary,
+    textAlign: 'center',
   },
 });
