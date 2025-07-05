@@ -70,6 +70,7 @@ export default function MemoryGameScreen() {
   const [sequence, setSequence] = useState<number[]>([]);
   const [playerSequence, setPlayerSequence] = useState<number[]>([]);
   const [activeColorIndex, setActiveColorIndex] = useState<number | null>(null);
+  const [playerPressedIndex, setPlayerPressedIndex] = useState<number | null>(null);
   const [isPlayerTurn, setIsPlayerTurn] = useState(false);
   const [isGameOver, setIsGameOver] = useState(true);
   const [isLoading, setIsLoading] = useState(true);
@@ -152,6 +153,7 @@ export default function MemoryGameScreen() {
     setLevel(1);
     setSequence([]);
     setPlayerSequence([]);
+    setPlayerPressedIndex(null);
     setTimeout(nextLevel, 500);
   };
 
@@ -178,6 +180,11 @@ export default function MemoryGameScreen() {
 
   const handlePlayerPress = (colorIndex: number) => {
     if (!isPlayerTurn) return;
+    
+    // Feedback visual imediato ao clicar
+    setPlayerPressedIndex(colorIndex);
+    setTimeout(() => setPlayerPressedIndex(null), 200);
+    
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     playSound(colorIndex);
     const newPlayerSequence = [...playerSequence, colorIndex];
@@ -203,6 +210,7 @@ export default function MemoryGameScreen() {
     setIsGameOver(true);
     setSequence([]);
     setPlayerSequence([]);
+    setPlayerPressedIndex(null);
     setIsAuthenticated(false);
   };
 
@@ -236,18 +244,21 @@ export default function MemoryGameScreen() {
           <View style={styles.gameBoard}>
             {GAME_COLORS.map((color, index) => {
                 const isActive = activeColorIndex === index;
-                const glowColor = isActive ? color : 'transparent';
+                const isPlayerPressed = playerPressedIndex === index;
+                const isHighlighted = isActive || isPlayerPressed;
+                const glowColor = isHighlighted ? color : 'transparent';
                 return (
                     <TouchableOpacity
                         key={index}
                         style={styles.gameButtonWrapper}
                         onPress={() => handlePlayerPress(index)}
                         disabled={!isPlayerTurn}
+                        activeOpacity={1} // Permite controle total da opacidade via estilo
                     >
                         <Animated.View style={[
                             styles.gameButton,
                             { backgroundColor: color, shadowColor: glowColor },
-                            isActive && styles.activeButton,
+                            isHighlighted && styles.activeButton,
                         ]}/>
                     </TouchableOpacity>
                 );
@@ -293,6 +304,7 @@ const styles = StyleSheet.create({
     elevation: 5, 
     borderWidth: 2,
     borderColor: 'rgba(0,0,0,0.3)',
+    opacity: 0.5, // Opacidade padrão de 50%
   },
   activeButton: { 
     transform: [{ scale: 1.05 }], 
@@ -300,6 +312,7 @@ const styles = StyleSheet.create({
     shadowRadius: 15, 
     elevation: 20,
     borderColor: 'rgba(255,255,255,0.5)',
+    opacity: 1, // Opacidade de 100% quando ativo
   },
   statusText: { color: PALETTE.textSecondary, fontSize: 18, fontFamily: 'Orbitron-Regular' },
 });
