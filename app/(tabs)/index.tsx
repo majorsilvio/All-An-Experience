@@ -24,6 +24,7 @@ export const games = [
   { title: "Xadrez", route: "/games/Chess", emoji: "♟️", description: "Estratégia e tática", category: "Estratégia" },
   { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "🚀", description: "Desvie dos obstáculos", category: "Ação" },
   { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "🌀", description: "Controle com movimento", category: "Habilidade" },
+  { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "🧩", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
 
 ] as const;
 

@@ -22,6 +22,15 @@ export const initDB = () => {
         );
       `);
 
+                  // Tabela para os recordes do Quebra-Cabeça
+            db.execSync(`
+                CREATE TABLE IF NOT EXISTS puzzle_records (
+                    difficulty INTEGER PRIMARY KEY NOT NULL,
+                    time INTEGER NOT NULL,
+                    moves INTEGER NOT NULL
+                );
+            `);
+
       // Labyrinth Score
       db.execSync(`
         CREATE TABLE IF NOT EXISTS labyrinth_levels (
@@ -210,4 +219,42 @@ export const updateLabyrinthLevelStars = (levelIndex: number, newStars: number) 
  */
 export const unlockLabyrinthLevel = (levelIndex: number) => {
   db.runSync('UPDATE labyrinth_levels SET is_unlocked = 1 WHERE level_index = ?', levelIndex);
+};
+
+// --- Funções do Quebra-Cabeça (NOVO) ---
+
+/**
+ * Carrega os recordes do quebra-cabeça do banco de dados.
+ */
+export const loadPuzzleRecords = (): Record<number, { time: number, moves: number }> => {
+    try {
+        const allRows = db.getAllSync<{ difficulty: number, time: number, moves: number }>(
+            'SELECT * FROM puzzle_records'
+        );
+        const records: Record<number, { time: number, moves: number }> = {};
+        for (const row of allRows) {
+            records[row.difficulty] = { time: row.time, moves: row.moves };
+        }
+        return records;
+    } catch (error) {
+        console.error('Erro ao carregar recordes do quebra-cabeça:', error);
+        return {};
+    }
+};
+
+/**
+ * Salva um novo recorde para uma dificuldade específica do quebra-cabeça.
+ */
+export const savePuzzleRecord = (difficulty: number, time: number, moves: number) => {
+    try {
+        db.withTransactionSync(() => {
+            db.runSync(
+                'INSERT OR REPLACE INTO puzzle_records (difficulty, time, moves) VALUES (?, ?, ?)',
+                difficulty, time, moves
+            );
+        });
+    } catch (error) {
+        console.error('Erro ao salvar recorde do quebra-cabeça:', error);
+        throw error;
+    }
 };
