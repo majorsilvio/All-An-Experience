@@ -58,6 +58,7 @@ export default function PuzzleScreen() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedPieceIndex, setSelectedPieceIndex] = useState<number | null>(null);
   const [usedImageIndexes, setUsedImageIndexes] = useState<number[]>([]);
+  const [showReferenceImage, setShowReferenceImage] = useState(false);
 
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
@@ -251,7 +252,11 @@ export default function PuzzleScreen() {
                 <Text style={styles.statsText}>{formatTime(time)}</Text>
                 <Text style={styles.statsText}>{moves} mov.</Text>
               </View>
-              {image && <Image source={image} style={styles.previewImage} />}
+              {image && (
+                <Pressable onPress={() => setShowReferenceImage(true)}>
+                  <Image source={image} style={styles.previewImage} />
+                </Pressable>
+              )}
             </View>
             <View style={[styles.puzzleContainer, { width: PUZZLE_CONTAINER_SIZE, height: PUZZLE_CONTAINER_SIZE }]}>
               {pieces.map((item, index) => <View key={item.id}>{renderPiece(item, index)}</View>)}
@@ -268,6 +273,36 @@ export default function PuzzleScreen() {
               <Pressable style={({ pressed }) => [styles.button, { marginTop: 20, transform: [{ scale: pressed ? 0.98 : 1 }] }]} onPress={() => setGameState('menu')}>
                 <Text style={styles.buttonText}>Voltar ao Menu</Text>
               </Pressable>
+            </View>
+          </View>
+        </Modal>
+
+        {/* Modal da Imagem de Referência */}
+        <Modal transparent={true} visible={showReferenceImage} animationType="fade">
+          <View style={styles.referenceModalContainer}>
+            <Pressable 
+              style={styles.referenceModalOverlay}
+              onPress={() => setShowReferenceImage(false)}
+            />
+            <View style={styles.referenceModalContent}>
+              <View style={styles.referenceHeader}>
+                <Text style={styles.referenceTitle}>Imagem de Referência</Text>
+                <Pressable 
+                  onPress={() => setShowReferenceImage(false)}
+                  style={styles.closeButton}
+                >
+                  <Text style={styles.closeButtonText}>✕</Text>
+                </Pressable>
+              </View>
+              {image && (
+                <View style={styles.imageContainer}>
+                  <Image 
+                    source={image} 
+                    style={styles.referenceImageLarge}
+                    resizeMode="contain"
+                  />
+                </View>
+              )}
             </View>
           </View>
         </Modal>
@@ -297,4 +332,24 @@ const styles = StyleSheet.create({
   modalContent: { backgroundColor: PALETTE.cardBackground, padding: 30, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: PALETTE.primary, width: '85%' },
   winTitle: { fontSize: 40, fontFamily: 'Orbitron-Bold', color: PALETTE.primary, marginBottom: 15 },
   winText: { fontSize: 18, color: PALETTE.textSecondary, fontFamily: 'Orbitron-Regular', marginBottom: 8 },
+  // Estilos para o modal da imagem de referência
+  referenceModalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
+  referenceModalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)' },
+  referenceModalContent: { backgroundColor: PALETTE.cardBackground, borderRadius: 20, padding: 20, width: '90%', maxWidth: 400, borderWidth: 1, borderColor: PALETTE.primary, zIndex: 1 },
+  referenceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
+  referenceTitle: { fontSize: 18, fontFamily: 'Orbitron-Bold', color: PALETTE.primary, flex: 1 },
+  closeButton: { width: 30, height: 30, borderRadius: 15, backgroundColor: PALETTE.primary, justifyContent: 'center', alignItems: 'center' },
+  closeButtonText: { fontSize: 16, fontWeight: 'bold', color: PALETTE.background },
+  imageContainer: {
+    width: '100%',
+    alignItems: 'center',
+    justifyContent: 'center',
+    aspectRatio: 1,
+    maxHeight: 300,
+  },
+  referenceImageLarge: { 
+    width: '100%', 
+    height: '100%',
+    borderRadius: 10,
+  },
 });
