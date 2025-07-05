@@ -3,16 +3,16 @@ import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-    ActivityIndicator,
-    Animated,
-    Dimensions,
-    Image,
-    Modal,
-    Pressable,
-    SafeAreaView,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  Animated,
+  Dimensions,
+  Image,
+  Modal,
+  Pressable,
+  SafeAreaView,
+  StyleSheet,
+  Text,
+  View,
 } from 'react-native';
 import { PALETTE } from '../(tabs)';
 import { loadPuzzleRecords, savePuzzleRecord } from '../../services/database'; // Integrado com o DB
@@ -290,8 +290,8 @@ export default function PuzzleScreen() {
             <Text style={styles.title}>Quebra-Cabeça</Text>
             {DIFFICULTIES.map(({ label, value }) => (
               <View key={value} style={styles.menuItem}>
-                <Pressable style={({ pressed }) => [styles.button, { transform: [{ scale: pressed ? 0.98 : 1 }] }]} onPress={() => startGame(value)}>
-                  <Text style={styles.buttonText}>{`${label} (${value}x${value})`}</Text>
+                <Pressable style={({ pressed }) => [styles.difficultyButton, { transform: [{ scale: pressed ? 0.98 : 1 }] }]} onPress={() => startGame(value)}>
+                  <Text style={styles.difficultyButtonText}>{`${label} (${value}x${value})`}</Text>
                 </Pressable>
                 <Text style={styles.recordText}>Recorde: {records[value] ? `${formatTime(records[value]!.time)} / ${records[value]!.moves} mov.` : 'Nenhum'}</Text>
               </View>
@@ -424,6 +424,8 @@ const styles = StyleSheet.create({
   gameContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   title: { fontSize: 48, color: PALETTE.textPrimary, fontFamily: 'Orbitron-Bold', marginBottom: 60, textAlign: 'center' },
   menuItem: { alignItems: 'center', marginBottom: 30, width: '100%' },
+  difficultyButton: { backgroundColor: PALETTE.primary, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 15, shadowColor: PALETTE.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 8, width: '80%' },
+  difficultyButtonText: { color: PALETTE.background_darker, fontSize: 20, fontFamily: 'Orbitron-Bold', letterSpacing: 2, textAlign: 'center' },
   button: { backgroundColor: PALETTE.cardBackground, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', width: '80%' },
   buttonText: { color: PALETTE.primary, fontSize: 20, fontFamily: 'Orbitron-Bold', textAlign: 'center' },
   recordText: { color: PALETTE.textSecondary, marginTop: 10, fontSize: 14, fontFamily: 'Orbitron-Regular' },
