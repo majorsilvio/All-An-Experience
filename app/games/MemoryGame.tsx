@@ -6,6 +6,7 @@ import { ActivityIndicator, Alert, Animated, Pressable, StatusBar, StyleSheet, T
 // --- Importações Nativas ---
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SQLite from 'expo-sqlite';
+import { Emoji } from '../../components/Emoji';
 
 
 // --- PALETA DE CORES E FONTES CONSISTENTE COM O PROJETO ---
@@ -230,7 +231,7 @@ export default function MemoryGameScreen() {
             <Text style={styles.scoreLabel}>RECORDE</Text>
             {isLoading ? <ActivityIndicator color={PALETTE.textPrimary} /> : 
              isAuthenticated ? <Text style={styles.scoreText}>{highScore}</Text> : 
-             isBiometricSupported ? <TouchableOpacity onPress={handleAuthentication}><Text style={styles.authText}>🔒</Text></TouchableOpacity> : 
+             isBiometricSupported ? <TouchableOpacity onPress={handleAuthentication}><Emoji name="lock" size={20} /></TouchableOpacity> : 
              <Text style={styles.scoreText}>{highScore}</Text>}
         </View>
       </View>
@@ -281,7 +282,6 @@ const styles = StyleSheet.create({
   scoreContainer: { alignItems: 'center', minHeight: 50, justifyContent: 'center' },
   scoreLabel: { color: PALETTE.textSecondary, fontSize: 14, fontFamily: 'Orbitron-Regular', letterSpacing: 2, },
   scoreText: { color: PALETTE.textPrimary, fontSize: 32, fontFamily: 'Orbitron-Bold', },
-  authText: { fontSize: 32, color: PALETTE.textPrimary },
   gameContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', },
   footer: { height: 100, justifyContent: 'center', alignItems: 'center' },
   startButton: { 

@@ -7,6 +7,7 @@ import * as LocalAuthentication from 'expo-local-authentication';
 import { Accelerometer } from 'expo-sensors';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Animated, Dimensions, Pressable, SafeAreaView, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { Emoji } from '../../components/Emoji';
 
 
 // --- CONSTANTES E TIPOS ---
@@ -281,7 +282,7 @@ export default function CosmicCorridorScreen() {
           <Text style={styles.highScoreLabel}>RECORDE</Text>
           {isLoading ? <ActivityIndicator color={PALETTE.primary} /> : 
            isAuthenticated ? <Text style={styles.highScoreText}>{highScore}</Text> : 
-           isBiometricSupported ? <TouchableOpacity onPress={handleAuthentication}><Text style={styles.authText}>🔒</Text></TouchableOpacity> : 
+           isBiometricSupported ? <TouchableOpacity onPress={handleAuthentication}><Emoji name="lock" size={20} /></TouchableOpacity> : 
            <Text style={styles.highScoreText}>{highScore}</Text>}
         </View>
         {gameState === 'gameOver' && <Text style={styles.finalScore}>PONTUAÇÃO ATUAL: {score}</Text>}
@@ -344,7 +345,6 @@ const styles = StyleSheet.create({
   highScoreContainer: { alignItems: 'center', marginBottom: 30, backgroundColor: 'rgba(0,0,0,0.2)', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 15 },
   highScoreLabel: { color: PALETTE.textSecondary, fontSize: 16, fontFamily: 'Orbitron-Regular' },
   highScoreText: { color: PALETTE.primary, fontSize: 32, fontFamily: 'Orbitron-Bold' },
-  authText: { fontSize: 32 },
   musicButton: { position: 'absolute', top: 60, right: 20, zIndex: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 25, width: 50, height: 50, justifyContent: 'center', alignItems: 'center' },
   musicButtonText: { fontSize: 24 },
 });

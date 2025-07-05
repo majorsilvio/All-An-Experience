@@ -3,6 +3,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from "expo-router";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Animated, Dimensions, FlatList, Platform, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { Emoji, FavoriteIcon } from '../../components/Emoji';
 import { SearchBar } from '../components/SearchBar';
 import { useFavorites } from '../context/FavoritesContext';
 
@@ -18,13 +19,13 @@ export const PALETTE = {
 };
 
 export const games = [
-  { title: "Led Lógico", route: "/games/LogicLed", emoji: "💡", description: "Desafie sua mente", category: "Quebra-Cabeça" },
-  { title: "Jogo da Memória", route: "/games/MemoryGame", emoji: "🃏", description: "Teste sua memória", category: "Quebra-Cabeça" },
-  { title: "Jogo da Velha", route: "/games/TicTacToe", emoji: "⭕️", description: "Um clássico rápido", category: "Clássicos de Tabuleiro" },
-  { title: "Xadrez", route: "/games/Chess", emoji: "♟️", description: "Estratégia e tática", category: "Estratégia" },
-  { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "🚀", description: "Desvie dos obstáculos", category: "Ação" },
-  { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "🌀", description: "Controle com movimento", category: "Habilidade" },
-  { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "🧩", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
+  { title: "Led Lógico", route: "/games/LogicLed", emoji: "bulb", description: "Desafie sua mente", category: "Quebra-Cabeça" },
+  { title: "Jogo da Memória", route: "/games/MemoryGame", emoji: "cards", description: "Teste sua memória", category: "Quebra-Cabeça" },
+  { title: "Jogo da Velha", route: "/games/TicTacToe", emoji: "tic-tac-toe", description: "Um clássico rápido", category: "Clássicos de Tabuleiro" },
+  { title: "Xadrez", route: "/games/Chess", emoji: "chess", description: "Estratégia e tática", category: "Estratégia" },
+  { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "rocket", description: "Desvie dos obstáculos", category: "Ação" },
+  { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "spiral", description: "Controle com movimento", category: "Habilidade" },
+  { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "puzzle", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
 
 ] as const;
 
@@ -60,14 +61,14 @@ export const GameCard = ({ item }: { item: Game }) => {
     <Pressable onPress={() => router.push(item.route as any)} style={({ pressed }) => [styles.cardContainer, { transform: [{ scale: pressed ? 0.97 : 1 }] }]}>
       <View style={styles.card}>
         <LinearGradient colors={[PALETTE.primary_darker, PALETTE.primary]} style={styles.cardImageContainer}>
-          <Text style={styles.cardEmoji}>{item.emoji}</Text>
+          <Emoji name={item.emoji} size={cardWidth * 0.5} />
         </LinearGradient>
         <View style={styles.cardTextContainer}>
           <Text style={styles.cardTitle} numberOfLines={1}>{item.title}</Text>
           <Text style={styles.cardDescription} numberOfLines={1}>{item.description}</Text>
         </View>
         <Pressable onPress={handleFavoritePress} style={styles.favoriteButton}>
-          <Text style={{color: favorited ? PALETTE.primary : PALETTE.textSecondary, fontSize: 22}}>{favorited ? '★' : '☆'}</Text>
+          <FavoriteIcon filled={favorited} style={{color: favorited ? PALETTE.primary : PALETTE.textSecondary}} />
         </Pressable>
       </View>
     </Pressable>
@@ -80,7 +81,7 @@ const FeaturedCard = () => {
         <Pressable onPress={() => router.push(featuredGame.route as any)} style={({ pressed }) => [ styles.featuredCardContainer, { opacity: pressed ? 0.9 : 1 } ]}>
             <LinearGradient colors={['#434343', '#000000']} style={styles.featuredCard}>
                 <View style={styles.featuredTextContainer}><Text style={styles.featuredTitle}>{featuredGame.title}</Text><Text style={styles.featuredDescription}>{featuredGame.description}</Text></View>
-                <Text style={styles.featuredEmoji}>{featuredGame.emoji}</Text>
+                <Emoji name={featuredGame.emoji} size={80} style={{marginLeft: 16, opacity: 0.8}} />
             </LinearGradient>
         </Pressable>
     );
@@ -135,7 +136,6 @@ export const styles = StyleSheet.create({
   cardContainer: { width: cardWidth, marginBottom: margin, },
   card: { borderRadius: 16, backgroundColor: PALETTE.cardBackground, overflow: 'hidden', borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', },
   cardImageContainer: { width: '100%', aspectRatio: 1, justifyContent: 'center', alignItems: 'center', },
-  cardEmoji: { fontSize: cardWidth * 0.5 },
   cardTextContainer: { padding: 14, },
   cardTitle: { fontSize: 16, color: PALETTE.textPrimary, fontFamily: 'Orbitron-Bold', marginBottom: 4, },
   cardDescription: { fontSize: 13, color: PALETTE.textSecondary, fontFamily: 'Orbitron-Regular' },
@@ -145,7 +145,6 @@ export const styles = StyleSheet.create({
   featuredTextContainer: { flex: 1, },
   featuredTitle: { fontFamily: 'Orbitron-Bold', color: PALETTE.textPrimary, fontSize: 24, marginBottom: 8, },
   featuredDescription: { fontFamily: 'Orbitron-Regular', color: PALETTE.textSecondary, fontSize: 16, },
-  featuredEmoji: { fontSize: 80, marginLeft: 16, opacity: 0.8, },
   emptyContainer: { alignItems: 'center', justifyContent: 'center', paddingVertical: 48, },
   emptyText: { color: PALETTE.textSecondary, fontSize: 16, fontFamily: 'Orbitron-Bold', },
 });

@@ -1,6 +1,7 @@
 import React from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
 import { PALETTE } from '../(tabs)';
+import { Emoji } from '../../components/Emoji';
 
 interface SearchBarProps {
   value: string;
@@ -12,7 +13,7 @@ export const SearchBar = ({ value, onChangeText, placeholder = 'Procurar jogos..
   return (
     <View style={styles.container}>
       <View style={styles.iconContainer}>
-        <Text style={styles.icon}>🔍</Text>
+        <Emoji name="search" size={20} />
       </View>
       <TextInput
         style={styles.input}

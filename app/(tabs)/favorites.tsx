@@ -2,6 +2,7 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { router } from 'expo-router';
 import React, { useMemo, useState } from "react";
 import { FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from "react-native";
+import { FavoriteIcon } from '../../components/Emoji';
 import { SearchBar } from '../components/SearchBar';
 import { useFavorites } from '../context/FavoritesContext';
 import { GameCard, games, PALETTE, styles } from './index';
@@ -42,7 +43,9 @@ export default function FavoritesScreen() {
                     </Text>
                     {favorites.size === 0 &&
                       <>
-                        <Text style={localStyles.emptySubText}>Clique na estrela ☆ para adicionar um jogo aqui.</Text>
+                        <Text style={localStyles.emptySubText}>
+                          Clique na estrela <FavoriteIcon filled={false} size={16} style={{color: PALETTE.textSecondary}} /> para adicionar um jogo aqui.
+                        </Text>
                         <Pressable onPress={() => router.replace('/(tabs)/')} style={localStyles.ctaButton}>
                             <Text style={localStyles.ctaButtonText}>Explorar Jogos</Text>
                         </Pressable>

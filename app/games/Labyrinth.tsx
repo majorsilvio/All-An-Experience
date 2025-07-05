@@ -7,6 +7,7 @@ import { Accelerometer } from 'expo-sensors';
 import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
+import { Emoji, HeartIcon, StarIcon } from '../../components/Emoji';
 
 // --- CONSTANTES E TIPOS ---
 const PALETTE = { ...AppPalette, danger: '#FF4757', wall: '#4B4B4B', secondary: '#00FFFF', star: '#FFD700' };
@@ -59,9 +60,16 @@ const isPositionSafe = (x: number, y: number, width: number, height: number, wal
 const LevelCard = ({ level, progress, onPress }: { level: LevelData, progress: LevelProgress, onPress: () => void }) => (
   <Pressable onPress={progress.is_unlocked ? onPress : undefined} style={[styles.levelCard, !progress.is_unlocked && styles.levelCardLocked]}>
     <Text style={styles.levelCardNumber}>{progress.level_index + 1}</Text>
-    {!progress.is_unlocked ? (<Text style={styles.lockedIcon}>🔒</Text>) : (
+    {!progress.is_unlocked ? (<Emoji name="lock" size={20} style={styles.lockedIcon} />) : (
       <View style={styles.starContainer}>
-        {Array(3).fill(0).map((_, i) => <Text key={i} style={[styles.starIcon, i < progress.stars_collected && styles.starIconCollected]}>★</Text>)}
+        {Array(3).fill(0).map((_, i) => (
+          <StarIcon 
+            key={i} 
+            filled={i < progress.stars_collected} 
+            size={16} 
+            style={i < progress.stars_collected ? styles.starIconCollected : styles.starIcon} 
+          />
+        ))}
       </View>
     )}
   </Pressable>
@@ -280,12 +288,21 @@ export default function LabyrinthScreen() {
             <View style={styles.hud}>
               <Text style={styles.hudText}>NÍVEL: {currentLevel + 1}</Text>
               <View style={styles.starHudContainer}>
-                {Array(3).fill(0).map((_, i) => <Text key={i} style={[styles.starIcon, i < collectedStars.size && styles.starIconCollected]}>★</Text>)}
+                {Array(3).fill(0).map((_, i) => (
+                  <StarIcon 
+                    key={i} 
+                    filled={i < collectedStars.size} 
+                    size={20} 
+                    style={i < collectedStars.size ? styles.starIconCollected : styles.starIcon} 
+                  />
+                ))}
               </View>
               <Pressable onPress={resetZoom} style={styles.zoomResetButton}>
-                <Text style={styles.zoomResetButtonText}>🔍</Text>
+                <Emoji name="search" size={16} style={styles.zoomResetButtonText} />
               </Pressable>
-              <View style={styles.livesContainer}>{Array(lives).fill(0).map((_, i) => <Text key={i} style={styles.lifeIcon}>❤️</Text>)}</View>
+              <View style={styles.livesContainer}>
+                {Array(lives).fill(0).map((_, i) => <HeartIcon key={i} size={20} style={styles.lifeIcon} />)}
+              </View>
             </View>
             <View style={styles.gameBoard}>
               <PinchGestureHandler
@@ -311,7 +328,7 @@ export default function LabyrinthScreen() {
                     if (!isStarSafe) return null; // Don't render stars that would be inside walls
                     
                     return (
-                      <Text key={star.id} style={[styles.star, { left: safeX, top: safeY }]}>★</Text>
+                      <StarIcon key={star.id} size={STAR_SIZE} filled={true} style={[styles.star, { left: safeX, top: safeY, position: 'absolute' }]} />
                     );
                   })}
                   
@@ -330,7 +347,7 @@ export default function LabyrinthScreen() {
               <View style={styles.menuOverlay}>
                 <Text style={styles.menuTitle}>{gameState === 'levelComplete' ? `NÍVEL ${currentLevel + 1} COMPLETO!` : 'FIM DE JOGO'}</Text>
                 <View style={styles.starContainer}>
-                  {Array(3).fill(0).map((_, i) => <Text key={i} style={[styles.starIcon, i < collectedStars.size && styles.starIconCollected, { fontSize: 40 }]}>★</Text>)}
+                  {Array(3).fill(0).map((_, i) => <StarIcon key={i} filled={i < collectedStars.size} size={40} style={[styles.starIcon, i < collectedStars.size && styles.starIconCollected]} />)}
                 </View>
                 {gameState === 'levelComplete' && currentLevel + 1 < LEVELS.length &&
                   <Pressable onPress={() => handleLevelSelect(currentLevel + 1)} style={styles.menuButton}><Text style={styles.menuButtonText}>PRÓXIMO NÍVEL</Text></Pressable>}
