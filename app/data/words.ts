@@ -1,0 +1,22 @@
+export const words = [
+  { word: "BRASIL", hint: "País da América do Sul conhecido pelo futebol e carnaval", difficulty: "medium" },
+  { word: "AFRICA", hint: "Continente com grande diversidade cultural e natural", difficulty: "medium" },
+  { word: "EVOLUCAO", hint: "Teoria científica proposta por Charles Darwin", difficulty: "medium" },
+  { word: "ATOMO", hint: "Menor unidade da matéria", difficulty: "easy" },
+  { word: "LUA", hint: "Satélite natural da Terra", difficulty: "easy" },
+  { word: "INTERNET", hint: "Rede global que conecta computadores e pessoas", difficulty: "medium" },
+  { word: "PIRAMIDE", hint: "Estrutura antiga construída no Egito", difficulty: "medium" },
+  { word: "ROMA", hint: "Cidade histórica conhecida pelo Coliseu", difficulty: "easy" },
+  { word: "ENERGIA", hint: "Capacidade de realizar trabalho, presente em várias formas", difficulty: "medium" },
+  { word: "VULCAO", hint: "Formação geológica que pode liberar lava", difficulty: "medium" },
+  { word: "PLANETA", hint: "Corpo celeste que orbita uma estrela", difficulty: "medium" },
+  { word: "DEMOCRACIA", hint: "Sistema de governo baseado na participação do povo", difficulty: "hard" },
+  { word: "AMAZONIA", hint: "Maior floresta tropical do mundo", difficulty: "medium" },
+  { word: "TELEFONE", hint: "Invenção de Alexander Graham Bell", difficulty: "medium" },
+  { word: "SATELITE", hint: "Objeto que orbita planetas ou transmite sinais", difficulty: "medium" },
+  { word: "LIBERDADE", hint: "Direito fundamental do ser humano", difficulty: "medium" },
+  { word: "GRAVIDADE", hint: "Força que atrai objetos com massa", difficulty: "medium" },
+  { word: "ARTE", hint: "Expressão criativa presente em várias culturas", difficulty: "easy" },
+  { word: "DINOSSAURO", hint: "Animal pré-histórico extinto há milhões de anos", difficulty: "hard" },
+  { word: "FRONTEIRA", hint: "Linha que separa dois países", difficulty: "medium" }
+];
