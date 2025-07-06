@@ -26,6 +26,7 @@ export const games = [
   { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "rocket", description: "Desvie dos obstáculos", category: "Ação" },
   { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "spiral", description: "Controle com movimento", category: "Habilidade" },
   { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "puzzle", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
+  { title: "Forca", route: "/games/Strength", emoji: "hangman", description: "Adivinhe a palavra", category: "Palavras" },
 
 ] as const;
 

@@ -18,6 +18,7 @@ const EMOJI_MAP: Record<string, string> = {
   'spiral': '🌀',
   'bulb': '💡',
   'cards': '🃏',
+  'hangman': '🤔',
   
   // Símbolos e interface
   'heart': '❤️',
