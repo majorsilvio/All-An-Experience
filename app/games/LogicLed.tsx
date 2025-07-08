@@ -21,6 +21,8 @@ import { useCallback, useEffect, useMemo, useState } from "react";
 
 import { IconSymbol } from "@/components/ui/IconSymbol";
 import * as SQLite from "expo-sqlite";
+import { FONTS } from "../../hooks/useFonts";
+import { useThemePalette } from "../../hooks/useThemePalette";
 
 /**
  * Renders the HomeScreen component which represents the main game interface.
@@ -34,6 +36,7 @@ import * as SQLite from "expo-sqlite";
  */
 
 export default function LogicLed() {
+  const palette = useThemePalette();
   const [level, setLevel] = useState(1);
   const [difficulty, setDifficulty] = useState(1);
   const [data, setData] = useState<boolean[][]>([]);
@@ -44,6 +47,18 @@ export default function LogicLed() {
     "NEW_GAME"
   );
   const db = useMemo(() => SQLite.openDatabaseSync("ledLogic.db"), []);
+
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return (
+      <ThemedView style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ThemedText style={{fontSize: 16}}>Carregando...</ThemedText>
+      </ThemedView>
+    );
+  }
+
+  // Criar estilos dinâmicos
+  const styles = createStyles(palette);
 
   const setupDatabase = useCallback(() => {
     try {
@@ -353,7 +368,7 @@ export default function LogicLed() {
 
 const { width, height } = Dimensions.get("window");
 
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   titleContainer: {
     flexDirection: "row",
     alignItems: "center",
@@ -370,13 +385,15 @@ const styles = StyleSheet.create({
   },
   input: {
     borderWidth: 1,
-    borderColor: "#aaa",
+    borderColor: palette.textSecondary,
     borderRadius: 8,
     padding: 10,
     fontSize: 16,
+    fontFamily: FONTS.regular,
     width: width * 0.8,
     textAlign: "center",
-    backgroundColor: "#fff",
+    backgroundColor: palette.cardBackground,
+    color: palette.textPrimary,
   },
   gameActions: {
     flex: 1,
@@ -398,7 +415,6 @@ const styles = StyleSheet.create({
     alignItems: "center",
     width: "100%",
   },
-
   header: {
     width: "100%",
     flexDirection: "row",
@@ -413,13 +429,13 @@ const styles = StyleSheet.create({
   },
   scoreLabel: {
     fontSize: 14,
-    fontFamily: "Orbitron-Regular",
+    fontFamily: FONTS.regular,
     letterSpacing: 2,
     flex: 1,
   },
   scoreText: {
     flex: 1,
     fontSize: 32,
-    fontFamily: "Orbitron-Bold",
+    fontFamily: FONTS.primary,
   },
 });

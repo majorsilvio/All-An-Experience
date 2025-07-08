@@ -1,19 +1,22 @@
 import { Stack, router } from 'expo-router';
 import { Pressable, Text } from 'react-native';
-import { PALETTE } from '../../constants/Colors'; // Ajuste o caminho se necessário
+import { FONTS } from '../../hooks/useFonts';
+import { useThemePalette } from '../../hooks/useThemePalette';
 
 export default function GameLayout() {
+  const palette = useThemePalette();
+
   return (
     <Stack
       // Opções de estilo globais aplicadas a todos os jogos
       screenOptions={{
         headerShown: true,
         headerStyle: {
-          backgroundColor: PALETTE.background_darker,
+          backgroundColor: palette.background_darker,
         },
-        headerTintColor: PALETTE.textPrimary,
+        headerTintColor: palette.textPrimary,
         headerTitleStyle: {
-          fontFamily: 'Orbitron-Bold',
+          fontFamily: FONTS.primary,
           fontSize: 18,
         },
         headerShadowVisible: false,
@@ -21,9 +24,24 @@ export default function GameLayout() {
         headerLeft: () => (
           <Pressable 
             onPress={() => router.back()} 
-            style={({ pressed }) => ({ marginLeft: 10, opacity: pressed ? 0.5 : 1 })}
+            style={({ pressed }) => ({ 
+              marginLeft: 10, 
+              opacity: pressed ? 0.7 : 1,
+              transform: [{ scale: pressed ? 0.95 : 1 }],
+              backgroundColor: pressed ? palette.cardBackground : 'transparent',
+              borderRadius: 20,
+              width: 40,
+              height: 40,
+              justifyContent: 'center',
+              alignItems: 'center',
+            })}
           >
-            <Text style={{ color: PALETTE.textPrimary, fontSize: 28, fontWeight: 'bold' }}>‹</Text>
+            <Text style={{ 
+              color: palette.primary, 
+              fontSize: 24, 
+              fontWeight: 'bold',
+              fontFamily: FONTS.gaming,
+            }}>‹</Text>
           </Pressable>
         ),
       }}

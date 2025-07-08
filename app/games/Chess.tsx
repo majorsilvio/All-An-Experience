@@ -1,14 +1,14 @@
-import { PALETTE as AppPalette } from '@/constants/Colors';
 import { deleteChessGame, initDB, loadChessGame, saveChessGame } from '@/services/database';
 import { Chess, Color, Piece, PieceSymbol, Square } from 'chess.js';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ActivityIndicator, Alert, Dimensions, Modal, Pressable, SafeAreaView, StatusBar, StyleSheet, Text, TouchableOpacity, View } from 'react-native';
+import { FONTS } from '../../hooks/useFonts';
+import { useThemePalette } from '../../hooks/useThemePalette';
 
 // --- CONSTANTES E COMPONENTES DE UI ---
 
-const PALETTE = { ...AppPalette, boardLight: '#EBECD0', boardDark: '#779556', highlight: 'rgba(255, 204, 0, 0.5)', danger: '#FF4757' };
 const PIECE_EMOJI_MAP: { [c in Color]: { [p in PieceSymbol]: string } } = { w: { p: '♙', r: '♖', n: '♘', b: '♗', q: '♕', k: '♔' }, b: { p: '♟︎', r: '♜', n: '♞', b: '♝', q: '♛', k: '♚' } };
 const { width, height } = Dimensions.get('window');
 const BOARD_SIZE = Math.min(width * 0.95, height * 0.6);
@@ -21,21 +21,35 @@ const formatTime = (seconds: number) => {
     return `${mins}:${secs}`;
 };
 
-const PromotionModal = ({ visible, onPromote }: { visible: boolean; onPromote: (piece: PieceSymbol) => void }) => (
+const PromotionModal = ({ visible, onPromote, palette }: { visible: boolean; onPromote: (piece: PieceSymbol) => void; palette: any }) => {
+  const styles = createModalStyles(palette);
+  return (
     <Modal transparent visible={visible} animationType="fade">
-      <View style={styles.modalContainer}><View style={styles.modalContent}><Text style={styles.modalTitle}>PROMOVER PEÃO</Text><View style={styles.promotionOptions}>
-        {(['q', 'r', 'b', 'n'] as PieceSymbol[]).map((p) => (<TouchableOpacity key={p} style={styles.promotionButton} onPress={() => onPromote(p)}><Text style={styles.pieceEmoji}>{PIECE_EMOJI_MAP['w'][p]}</Text></TouchableOpacity>))}
-      </View></View></View>
+      <View style={styles.modalContainer}>
+        <View style={styles.modalContent}>
+          <Text style={styles.modalTitle}>PROMOVER PEÃO</Text>
+          <View style={styles.promotionOptions}>
+            {(['q', 'r', 'b', 'n'] as PieceSymbol[]).map((p) => (
+              <TouchableOpacity key={p} style={styles.promotionButton} onPress={() => onPromote(p)}>
+                <Text style={styles.pieceEmoji}>{PIECE_EMOJI_MAP['w'][p]}</Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
     </Modal>
-);
+  );
+};
 
-const PlayerHUD = ({ time, captured, advantage }: { time: number, captured: Piece[], advantage: number }) => (
+const PlayerHUD = ({ time, captured, advantage, palette }: { time: number, captured: Piece[], advantage: number, palette: any }) => {
+  const styles = createHUDStyles(palette);
+  return (
     <View style={styles.hudContainer}>
         <View style={styles.capturedPiecesContainer}>
             {captured.map((p, i) => (
               <Text key={`${p.color}_cap_${i}`} style={[
                 styles.capturedPieceEmoji,
-                p.color === 'b' && { color: PALETTE.textPrimary } 
+                p.color === 'b' && { color: palette.textPrimary } 
               ]}>
                 {PIECE_EMOJI_MAP[p.color][p.type]}
               </Text>
@@ -44,12 +58,14 @@ const PlayerHUD = ({ time, captured, advantage }: { time: number, captured: Piec
         </View>
         <Text style={styles.playerTimer}>{formatTime(time)}</Text>
     </View>
-);
+  );
+};
 
 // ==================================
 // COMPONENTE PRINCIPAL DO JOGO
 // ==================================
 export default function ChessScreen() {
+  const palette = useThemePalette();
   const [gameState, setGameState] = useState<'loading' | 'initial_choice' | 'initial' | 'config' | 'playing' | 'gameOver'>('loading');
   const [winner, setWinner] = useState<string | null>(null);
 
@@ -67,6 +83,26 @@ export default function ChessScreen() {
   const [whiteTime, setWhiteTime] = useState(600);
   const [blackTime, setBlackTime] = useState(600);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return (
+      <LinearGradient colors={['#1A1A1A', '#0D0D0D']} style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <Text style={{color: '#BFFF00', fontSize: 16}}>Carregando...</Text>
+      </LinearGradient>
+    );
+  }
+
+  // Criar estilos dinâmicos
+  const styles = createStyles(palette);
+
+  // Cores dinâmicas do tabuleiro
+  const getBoardColors = () => ({
+    boardLight: palette.cardBackground,
+    boardDark: palette.primary_darker,
+    highlight: palette.neonAccent + '80', // 80 = 50% opacity em hex
+    danger: palette.warningAccent
+  });
 
   useEffect(() => {
     const initializeGame = () => {
@@ -227,8 +263,10 @@ export default function ChessScreen() {
   const ranks = ['8', '7', '6', '5', '4', '3', '2', '1'];
 
   const renderContent = () => {
+    const boardColors = getBoardColors();
+    
     switch (gameState) {
-      case 'loading': return <View style={styles.centeredView}><ActivityIndicator size="large" color={PALETTE.primary} /></View>;
+      case 'loading': return <View style={styles.centeredView}><ActivityIndicator size="large" color={palette.primary} /></View>;
       case 'initial_choice': return (
           <View style={styles.centeredView}>
             <Pressable onPress={handleContinueGame} style={({ pressed }) => [styles.startButton, pressed && { opacity: 0.8 }]}><Text style={styles.startButtonText}>CONTINUAR PARTIDA</Text></Pressable>
@@ -252,7 +290,7 @@ export default function ChessScreen() {
       case 'gameOver':
         return (
           <>
-            <PlayerHUD time={blackTime} captured={capturedPieces.w} advantage={materialAdvantage.w} />
+            <PlayerHUD time={blackTime} captured={capturedPieces.w} advantage={materialAdvantage.w} palette={palette} />
             <View style={styles.boardContainer}>
               <View style={styles.board}>
                 {board.map((row, rowIndex) => row.map((p, colIndex) => {
@@ -260,17 +298,17 @@ export default function ChessScreen() {
                   const isLightSquare = (rowIndex + colIndex) % 2 !== 0;
                   const isLast = lastMove?.from === squareName || lastMove?.to === squareName;
                   return (
-                    <TouchableOpacity key={squareName} style={[styles.square, { backgroundColor: isLightSquare ? PALETTE.boardLight : PALETTE.boardDark }]} onPress={() => handleSquarePress(squareName)}>
-                      {isLast && <View style={[styles.highlight, { backgroundColor: PALETTE.primary, opacity: 0.4 }]} />}
+                    <TouchableOpacity key={squareName} style={[styles.square, { backgroundColor: isLightSquare ? boardColors.boardLight : boardColors.boardDark }]} onPress={() => handleSquarePress(squareName)}>
+                      {isLast && <View style={[styles.highlight, { backgroundColor: palette.primary, opacity: 0.4 }]} />}
                       {p && <Text style={styles.pieceEmoji}>{PIECE_EMOJI_MAP[p.color][p.type]}</Text>}
-                      {selectedSquare === squareName && <View style={[styles.highlight, { borderWidth: 4, borderColor: PALETTE.highlight as any }]} />}
+                      {selectedSquare === squareName && <View style={[styles.highlight, { borderWidth: 4, borderColor: boardColors.highlight }]} />}
                       {possibleMoves.includes(squareName) && (<View style={[styles.highlight, styles.possibleMoveDot]}/>)}
                     </TouchableOpacity>
                   );
                 }))}
               </View>
             </View>
-            <PlayerHUD time={whiteTime} captured={capturedPieces.b} advantage={materialAdvantage.b} />
+            <PlayerHUD time={whiteTime} captured={capturedPieces.b} advantage={materialAdvantage.b} palette={palette} />
             <View style={styles.footer}>
               <View style={styles.statusBox}><Text style={[styles.statusText, game.inCheck() && styles.checkText]}>{status}</Text></View>
               {gameState === 'gameOver' && (
@@ -289,42 +327,30 @@ export default function ChessScreen() {
   };
 
   return (
-    <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
+    <LinearGradient colors={[palette.background, palette.background_darker]} style={styles.container}>
       <SafeAreaView style={styles.safeArea}>
         <StatusBar barStyle="light-content" />
-        <PromotionModal visible={isPromotionModalVisible} onPromote={handlePromotion} />
+        <PromotionModal visible={isPromotionModalVisible} onPromote={handlePromotion} palette={palette} />
         {renderContent()}
       </SafeAreaView>
     </LinearGradient>
   );
 }
 
-// --- ESTILOS ---
-const styles = StyleSheet.create({
+// --- ESTILOS DINÂMICOS ---
+const createStyles = (palette: any) => StyleSheet.create({
   container: { flex: 1, },
   safeArea: { flex: 1, alignItems: 'center', justifyContent: 'center', },
   centeredView: { flex: 1, justifyContent: 'center', alignItems: 'center', width: '100%'},
-  startButton: { backgroundColor: PALETTE.primary, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 15, shadowColor: PALETTE.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 8, },
-  startButtonText: { color: PALETTE.background_darker, fontSize: 20, fontFamily: 'Orbitron-Bold', letterSpacing: 2 },
-  winnerText: { fontSize: 24, fontFamily: 'Orbitron-Bold', color: PALETTE.primary, textAlign: 'center', marginBottom: 20, },
-  configTitle: { fontSize: 24, fontFamily: 'Orbitron-Bold', color: PALETTE.textPrimary, marginBottom: 40,},
-  timeButton: { backgroundColor: PALETTE.cardBackground, paddingVertical: 20, width: '80%', alignItems: 'center', borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  timeButtonText: { color: PALETTE.textPrimary, fontFamily: 'Orbitron-Regular', fontSize: 18,},
-  hudContainer: { width: '95%', paddingHorizontal: 10, justifyContent: 'space-between', alignItems: 'center', flex: 1, flexDirection: 'row'},
-  playerTimer: { fontFamily: 'Orbitron-Bold', fontSize: 22, color: PALETTE.textPrimary, backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, overflow: 'hidden' },
-  capturedPiecesContainer: { flexDirection: 'row', flex: 1, alignItems: 'center', flexWrap: 'wrap', height: '100%' },
-  capturedPieceEmoji: {
-    fontSize: 18,
-    marginRight: 2,
-    // A cor é definida dinamicamente no componente PlayerHUD
-    textShadowColor: PALETTE.primary,
-    textShadowRadius: 8,
-    textShadowOffset: { width: 0, height: 0 },
-  },
-  advantageText: { marginLeft: 8, fontSize: 16, color: PALETTE.textSecondary, fontWeight: 'bold'},
+  startButton: { backgroundColor: palette.primary, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 15, shadowColor: palette.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 8, },
+  startButtonText: { color: palette.background_darker, fontSize: 20, fontFamily: FONTS.primary, letterSpacing: 2 },
+  winnerText: { fontSize: 24, fontFamily: FONTS.primary, color: palette.primary, textAlign: 'center', marginBottom: 20, },
+  configTitle: { fontSize: 24, fontFamily: FONTS.primary, color: palette.textPrimary, marginBottom: 40,},
+  timeButton: { backgroundColor: palette.cardBackground, paddingVertical: 20, width: '80%', alignItems: 'center', borderRadius: 12, marginBottom: 20, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  timeButtonText: { color: palette.textPrimary, fontFamily: FONTS.regular, fontSize: 18,},
   statusBox: { flex: 1, alignItems: 'center', justifyContent: 'center' },
-  statusText: { fontSize: 16, fontFamily: 'Orbitron-Bold', color: PALETTE.textPrimary, textAlign: 'center', },
-  checkText: { color: PALETTE.danger, },
+  statusText: { fontSize: 16, fontFamily: FONTS.primary, color: palette.textPrimary, textAlign: 'center', },
+  checkText: { color: palette.warningAccent, },
   boardContainer: { width: BOARD_SIZE, height: BOARD_SIZE, shadowColor: "#000", shadowOffset: { width: 0, height: 10 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 20, },
   board: { width: '100%', height: '100%', flexDirection: 'row', flexWrap: 'wrap', borderRadius: 8, overflow: 'hidden' },
   square: { width: SQUARE_SIZE, height: SQUARE_SIZE, alignItems: 'center', justifyContent: 'center' },
@@ -332,11 +358,29 @@ const styles = StyleSheet.create({
   possibleMoveDot: { width: SQUARE_SIZE * 0.35, height: SQUARE_SIZE * 0.35, borderRadius: SQUARE_SIZE * 0.175, backgroundColor: 'rgba(0, 0, 0, 0.4)', alignSelf: 'center' },
   pieceEmoji: { fontSize: SQUARE_SIZE * 0.7, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: {width: 1, height: 2}, textShadowRadius: 3},
   footer: { flex: 1.5, width: '100%', alignItems: 'center', justifyContent: 'center',},
-  resetButton: { backgroundColor: PALETTE.cardBackground, paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', },
-  resetButtonText: { color: PALETTE.textSecondary, fontFamily: 'Orbitron-Bold', fontSize: 14, letterSpacing: 1, },
+  resetButton: { backgroundColor: palette.cardBackground, paddingVertical: 12, paddingHorizontal: 30, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)', },
+  resetButtonText: { color: palette.textSecondary, fontFamily: FONTS.primary, fontSize: 14, letterSpacing: 1, },
+});
+
+const createModalStyles = (palette: any) => StyleSheet.create({
   modalContainer: { flex: 1, backgroundColor: 'rgba(0,0,0,0.8)', justifyContent: 'center', alignItems: 'center'},
-  modalContent: { backgroundColor: PALETTE.cardBackground, padding: 20, borderRadius: 10, alignItems: 'center', elevation: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
-  modalTitle: { fontSize: 18, fontFamily: 'Orbitron-Bold', marginBottom: 20, color: PALETTE.textPrimary },
+  modalContent: { backgroundColor: palette.cardBackground, padding: 20, borderRadius: 10, alignItems: 'center', elevation: 5, borderWidth: 1, borderColor: 'rgba(255,255,255,0.1)' },
+  modalTitle: { fontSize: 18, fontFamily: FONTS.primary, marginBottom: 20, color: palette.textPrimary },
   promotionOptions: { flexDirection: 'row' },
-  promotionButton: { marginHorizontal: 5, width: SQUARE_SIZE, height: SQUARE_SIZE, justifyContent: 'center', alignItems: 'center', backgroundColor: PALETTE.boardLight, borderRadius: 8 },
+  promotionButton: { marginHorizontal: 5, width: SQUARE_SIZE, height: SQUARE_SIZE, justifyContent: 'center', alignItems: 'center', backgroundColor: palette.cardBackground, borderRadius: 8 },
+  pieceEmoji: { fontSize: SQUARE_SIZE * 0.7, textShadowColor: 'rgba(0,0,0,0.3)', textShadowOffset: {width: 1, height: 2}, textShadowRadius: 3},
+});
+
+const createHUDStyles = (palette: any) => StyleSheet.create({
+  hudContainer: { width: '95%', paddingHorizontal: 10, justifyContent: 'space-between', alignItems: 'center', flex: 1, flexDirection: 'row'},
+  playerTimer: { fontFamily: FONTS.primary, fontSize: 22, color: palette.textPrimary, backgroundColor: 'rgba(0,0,0,0.3)', paddingHorizontal: 12, paddingVertical: 6, borderRadius: 8, overflow: 'hidden' },
+  capturedPiecesContainer: { flexDirection: 'row', flex: 1, alignItems: 'center', flexWrap: 'wrap', height: '100%' },
+  capturedPieceEmoji: {
+    fontSize: 18,
+    marginRight: 2,
+    textShadowColor: palette.primary,
+    textShadowRadius: 8,
+    textShadowOffset: { width: 0, height: 0 },
+  },
+  advantageText: { marginLeft: 8, fontSize: 16, color: palette.textSecondary, fontWeight: 'bold'},
 });

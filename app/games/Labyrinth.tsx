@@ -1,4 +1,3 @@
-import { PALETTE as AppPalette } from '@/constants/Colors';
 import { LEVELS, LevelData } from '@/constants/LabyrinthLevels';
 import { loadLabyrinthLevels, unlockLabyrinthLevel, updateLabyrinthLevelStars } from '@/services/database';
 import * as Haptics from 'expo-haptics';
@@ -8,9 +7,10 @@ import React, { useCallback, useEffect, useRef, useState } from 'react';
 import { ActivityIndicator, Animated, Dimensions, FlatList, Pressable, SafeAreaView, StyleSheet, Text, View } from 'react-native';
 import { GestureHandlerRootView, PinchGestureHandler, State } from 'react-native-gesture-handler';
 import { Emoji, HeartIcon, StarIcon } from '../../components/Emoji';
+import { FONTS } from '../../hooks/useFonts';
+import { useThemePalette } from '../../hooks/useThemePalette';
 
 // --- CONSTANTES E TIPOS ---
-const PALETTE = { ...AppPalette, danger: '#FF4757', wall: '#4B4B4B', secondary: '#00FFFF', star: '#FFD700' };
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BALL_SIZE = 24;
 const HOLE_SIZE = 40;
@@ -57,27 +57,31 @@ const isPositionSafe = (x: number, y: number, width: number, height: number, wal
 };
 
 // --- COMPONENTES DE UI ---
-const LevelCard = ({ level, progress, onPress }: { level: LevelData, progress: LevelProgress, onPress: () => void }) => (
-  <Pressable onPress={progress.is_unlocked ? onPress : undefined} style={[styles.levelCard, !progress.is_unlocked && styles.levelCardLocked]}>
-    <Text style={styles.levelCardNumber}>{progress.level_index + 1}</Text>
-    {!progress.is_unlocked ? (<Emoji name="lock" size={20} style={styles.lockedIcon} />) : (
-      <View style={styles.starContainer}>
-        {Array(3).fill(0).map((_, i) => (
-          <StarIcon 
-            key={i} 
-            filled={i < progress.stars_collected} 
-            size={16} 
-            style={i < progress.stars_collected ? styles.starIconCollected : styles.starIcon} 
-          />
-        ))}
-      </View>
-    )}
-  </Pressable>
-);
+const LevelCard = ({ level, progress, onPress, palette }: { level: LevelData, progress: LevelProgress, onPress: () => void, palette: any }) => {
+  const styles = createStyles(palette);
+  return (
+    <Pressable onPress={progress.is_unlocked ? onPress : undefined} style={[styles.levelCard, !progress.is_unlocked && styles.levelCardLocked]}>
+      <Text style={styles.levelCardNumber}>{progress.level_index + 1}</Text>
+      {!progress.is_unlocked ? (<Emoji name="lock" size={20} style={styles.lockedIcon} />) : (
+        <View style={styles.starContainer}>
+          {Array(3).fill(0).map((_, i) => (
+            <StarIcon 
+              key={i} 
+              filled={i < progress.stars_collected} 
+              size={16} 
+              style={i < progress.stars_collected ? styles.starIconCollected : styles.starIcon} 
+            />
+          ))}
+        </View>
+      )}
+    </Pressable>
+  );
+};
 
 // --- COMPONENTE PRINCIPAL DO JOGO ---
 
 export default function LabyrinthScreen() {
+  const palette = useThemePalette();
   const [gameState, setGameState] = useState<GameState>('loading');
   const [levelProgress, setLevelProgress] = useState<LevelProgress[]>([]);
   const [currentLevel, setCurrentLevel] = useState(0);
@@ -91,6 +95,26 @@ export default function LabyrinthScreen() {
   // Refs para controle de zoom
   const scale = useRef(new Animated.Value(DEFAULT_SCALE)).current;
   const lastScale = useRef(DEFAULT_SCALE);
+
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return (
+      <LinearGradient colors={['#1A1A1A', '#0D0D0D']} style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color="#BFFF00" />
+        <Text style={{color: '#BFFF00', fontSize: 16, marginTop: 10}}>Carregando...</Text>
+      </LinearGradient>
+    );
+  }
+
+  // Criar estilos dinâmicos
+  const styles = createStyles(palette);
+
+  // Cores dinâmicas baseadas na paleta
+  const getLabyrinthColors = () => ({
+    danger: palette.warningAccent,
+    wall: palette.cardBackground,
+    star: palette.retroOrange
+  });
 
   useEffect(() => {
     const initializeLevels = async () => {
@@ -263,14 +287,14 @@ export default function LabyrinthScreen() {
 
   const renderContent = () => {
     switch (gameState) {
-      case 'loading': return <ActivityIndicator size="large" color={PALETTE.primary} />;
+      case 'loading': return <ActivityIndicator size="large" color={palette.primary} />;
       case 'level_selection':
         return (
           <>
             <Text style={styles.menuTitle}>SELECIONE O NÍVEL</Text>
             <FlatList
               data={levelProgress}
-              renderItem={({ item }) => <LevelCard level={LEVELS[item.level_index]} progress={item} onPress={() => handleLevelSelect(item.level_index)} />}
+              renderItem={({ item }) => <LevelCard level={LEVELS[item.level_index]} progress={item} onPress={() => handleLevelSelect(item.level_index)} palette={palette} />}
               keyExtractor={item => item.level_index.toString()}
               numColumns={3}
               contentContainerStyle={styles.levelSelectionContainer}
@@ -281,7 +305,7 @@ export default function LabyrinthScreen() {
       case 'levelComplete':
       case 'gameOver':
         if (!currentLevelData) {
-          return <ActivityIndicator size="large" color={PALETTE.primary} />;
+          return <ActivityIndicator size="large" color={palette.primary} />;
         }
         return (
           <>
@@ -328,7 +352,9 @@ export default function LabyrinthScreen() {
                     if (!isStarSafe) return null; // Don't render stars that would be inside walls
                     
                     return (
-                      <StarIcon key={star.id} size={STAR_SIZE} filled={true} style={[styles.star, { left: safeX, top: safeY, position: 'absolute' }]} />
+                      <View key={star.id} style={{ left: safeX, top: safeY, position: 'absolute' }}>
+                        <StarIcon size={STAR_SIZE} filled={true} style={styles.star} />
+                      </View>
                     );
                   })}
                   
@@ -347,7 +373,7 @@ export default function LabyrinthScreen() {
               <View style={styles.menuOverlay}>
                 <Text style={styles.menuTitle}>{gameState === 'levelComplete' ? `NÍVEL ${currentLevel + 1} COMPLETO!` : 'FIM DE JOGO'}</Text>
                 <View style={styles.starContainer}>
-                  {Array(3).fill(0).map((_, i) => <StarIcon key={i} filled={i < collectedStars.size} size={40} style={[styles.starIcon, i < collectedStars.size && styles.starIconCollected]} />)}
+                  {Array(3).fill(0).map((_, i) => <StarIcon key={i} filled={i < collectedStars.size} size={40} style={i < collectedStars.size ? styles.starIconCollected : styles.starIcon} />)}
                 </View>
                 {gameState === 'levelComplete' && currentLevel + 1 < LEVELS.length &&
                   <Pressable onPress={() => handleLevelSelect(currentLevel + 1)} style={styles.menuButton}><Text style={styles.menuButtonText}>PRÓXIMO NÍVEL</Text></Pressable>}
@@ -355,7 +381,7 @@ export default function LabyrinthScreen() {
                   setLevelProgress(loadLabyrinthLevels()); // Refresh level progress
                   resetZoom(); // Reset zoom when going back to menu
                   setGameState('level_selection');
-                }} style={[styles.menuButton, { marginTop: 10, backgroundColor: PALETTE.cardBackground }]}><Text style={[styles.menuButtonText, { color: 'white' }]}>MENU DE NÍVEIS</Text></Pressable>
+                }} style={[styles.menuButton, { marginTop: 10, backgroundColor: palette.cardBackground }]}><Text style={[styles.menuButtonText, { color: 'white' }]}>MENU DE NÍVEIS</Text></Pressable>
               </View>
             )}
           </>
@@ -365,7 +391,7 @@ export default function LabyrinthScreen() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
-      <LinearGradient colors={[PALETTE.background_darker, PALETTE.background]} style={styles.container}>
+      <LinearGradient colors={[palette.background_darker, palette.background]} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           {renderContent()}
         </SafeAreaView>
@@ -374,11 +400,12 @@ export default function LabyrinthScreen() {
   );
 }
 
-const styles = StyleSheet.create({
+// Para o Labyrinth, como usa muitos componentes dinâmicos, criarei uma versão simplificada dos estilos
+const createStyles = (palette: any) => StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1 },
   levelCard: {
-    backgroundColor: PALETTE.cardBackground,
+    backgroundColor: palette.cardBackground,
     borderRadius: 15,
     padding: 20,
     margin: 10,
@@ -387,22 +414,23 @@ const styles = StyleSheet.create({
     minHeight: 100,
     minWidth: 100,
     borderWidth: 2,
-    borderColor: PALETTE.primary,
+    borderColor: palette.primary,
   },
   levelCardLocked: {
-    backgroundColor: PALETTE.background_darker,
-    borderColor: '#666',
+    backgroundColor: palette.background_darker,
+    borderColor: palette.textSecondary,
     opacity: 0.6,
   },
   levelCardNumber: {
     fontWeight: 'bold',
     fontSize: 24,
-    color: PALETTE.textPrimary,
+    fontFamily: FONTS.primary,
+    color: palette.textPrimary,
     marginBottom: 10,
   },
   lockedIcon: {
     fontSize: 30,
-    color: '#666',
+    color: palette.textSecondary,
   },
   starContainer: {
     flexDirection: 'row',
@@ -411,12 +439,12 @@ const styles = StyleSheet.create({
   },
   starIcon: {
     fontSize: 20,
-    color: '#666',
+    color: palette.textSecondary,
     textShadowColor: 'black',
     textShadowRadius: 2,
   },
   starIconCollected: {
-    color: PALETTE.star,
+    color: palette.retroOrange,
     textShadowColor: 'orange',
     textShadowRadius: 5,
   },
@@ -431,7 +459,7 @@ const styles = StyleSheet.create({
   star: {
     position: 'absolute',
     fontSize: STAR_SIZE,
-    color: PALETTE.star,
+    color: palette.retroOrange,
     textShadowColor: 'orange',
     textShadowRadius: 5,
   },
@@ -446,9 +474,9 @@ const styles = StyleSheet.create({
     left: 0, 
     right: 0, 
     zIndex: 10,
-    height: HUD_HEIGHT - 40, // Ensure HUD fits in reserved space
+    height: HUD_HEIGHT - 40,
   },
-  hudText: { fontWeight: 'bold', fontSize: 18, color: PALETTE.textPrimary },
+  hudText: { fontWeight: 'bold', fontSize: 18, fontFamily: FONTS.primary, color: palette.textPrimary },
   zoomResetButton: {
     backgroundColor: 'rgba(0, 0, 0, 0.5)',
     borderRadius: 20,
@@ -467,18 +495,18 @@ const styles = StyleSheet.create({
     flex: 1, 
     width: '100%', 
     height: '100%',
-    marginTop: HUD_HEIGHT, // Account for HUD space
+    marginTop: HUD_HEIGHT,
   },
   gameBoardContent: {
     flex: 1,
     width: '100%',
     height: '100%',
   },
-  ball: { position: 'absolute', width: BALL_SIZE, height: BALL_SIZE, borderRadius: BALL_SIZE / 2, backgroundColor: PALETTE.primary, shadowColor: PALETTE.primary, shadowRadius: 10, shadowOpacity: 1, elevation: 10 },
-  hole: { position: 'absolute', width: HOLE_SIZE, height: HOLE_SIZE, borderRadius: HOLE_SIZE / 2, backgroundColor: 'black', borderWidth: 3, borderColor: PALETTE.secondary },
-  wall: { position: 'absolute', backgroundColor: PALETTE.wall, borderRadius: 5, borderWidth: 1, borderColor: '#333' },
+  ball: { position: 'absolute', width: BALL_SIZE, height: BALL_SIZE, borderRadius: BALL_SIZE / 2, backgroundColor: palette.primary, shadowColor: palette.primary, shadowRadius: 10, shadowOpacity: 1, elevation: 10 },
+  hole: { position: 'absolute', width: HOLE_SIZE, height: HOLE_SIZE, borderRadius: HOLE_SIZE / 2, backgroundColor: 'black', borderWidth: 3, borderColor: palette.neonAccent },
+  wall: { position: 'absolute', backgroundColor: palette.cardBackground, borderRadius: 5, borderWidth: 1, borderColor: palette.textSecondary },
   menuOverlay: { ...StyleSheet.absoluteFillObject, backgroundColor: 'rgba(0, 0, 0, 0.8)', justifyContent: 'center', alignItems: 'center' },
-  menuTitle: { fontSize: 32, fontWeight: 'bold', color: 'white', marginBottom: 40, textAlign: 'center', paddingHorizontal: 20 },
-  menuButton: { backgroundColor: PALETTE.primary, paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10 },
-  menuButtonText: { color: PALETTE.background_darker, fontSize: 20, fontWeight: 'bold' },
+  menuTitle: { fontSize: 32, fontWeight: 'bold', fontFamily: FONTS.primary, color: 'white', marginBottom: 40, textAlign: 'center', paddingHorizontal: 20 },
+  menuButton: { backgroundColor: palette.primary, paddingVertical: 15, paddingHorizontal: 50, borderRadius: 10 },
+  menuButtonText: { color: palette.background_darker, fontSize: 20, fontFamily: FONTS.primary, fontWeight: 'bold' },
 });

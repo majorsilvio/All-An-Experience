@@ -1,5 +1,7 @@
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
+import { FONTS } from "../../hooks/useFonts";
+import { useThemePalette } from "../../hooks/useThemePalette";
 import { Letter } from "../types";
 
 interface WordDisplayProps {
@@ -8,6 +10,9 @@ interface WordDisplayProps {
 }
 
 const WordDisplay: React.FC<WordDisplayProps> = ({ word, guessedLetters }) => {
+  const palette = useThemePalette();
+  const styles = createStyles(palette);
+
   return (
     <View style={styles.container}>
       {word.split("").map((letter, index) => (
@@ -19,7 +24,7 @@ const WordDisplay: React.FC<WordDisplayProps> = ({ word, guessedLetters }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   container: {
     flexDirection: "row",
     justifyContent: "center",
@@ -28,6 +33,8 @@ const styles = StyleSheet.create({
   letter: {
     fontSize: 32,
     marginHorizontal: 5,
+    fontFamily: FONTS.primary,
+    color: palette.textPrimary,
   },
 });
 

@@ -12,20 +12,13 @@ import {
     TextInput,
     View,
 } from "react-native";
+import { FONTS } from '../../hooks/useFonts';
+import { useThemePalette } from '../../hooks/useThemePalette';
 import HangmanDrawing from "../components/HangmanDrawing";
 import Keyboard from "../components/Keyboard";
 import WordDisplay from "../components/WordDisplay";
 import { words } from "../data/words";
 import { Letter } from "../types";
-
-const PALETTE = {
-  background: "#1A1A1A",
-  background_darker: "#0D0D0D",
-  primary: "#BFFF00", // Verde-Limão Vibrante
-  secondary: "#00FFFF", // Ciano
-  textPrimary: "#F5F5F5",
-  textSecondary: "#AAAAAA",
-};
 
 type WordItem = {
   word: string;
@@ -33,6 +26,7 @@ type WordItem = {
 };
 
 export default function App() {
+  const palette = useThemePalette();
   const [playerName, setPlayerName] = useState<string>("");
   const [nameConfirmed, setNameConfirmed] = useState<boolean>(false);
   const [currentWord, setCurrentWord] = useState<WordItem>({ word: "", hint: "" });
@@ -45,6 +39,18 @@ export default function App() {
 
   // Animated value para a barra de progresso
   const progressAnim = useRef(new Animated.Value(0)).current;
+
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return (
+      <View style={{flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: '#1A1A1A'}}>
+        <Text style={{color: '#BFFF00', fontSize: 16}}>Carregando...</Text>
+      </View>
+    );
+  }
+
+  // Criar estilos dinâmicos
+  const styles = createStyles(palette);
 
   useEffect(() => {
     if (nameConfirmed) {
@@ -131,7 +137,7 @@ export default function App() {
 
   // Cor da barra: vermelho se <= 10 segundos restantes, senão verde-limão
   const timeRemaining = maxTime - time;
-  const progressBarColor = timeRemaining <= 10 ? "#f44336" : PALETTE.primary;
+  const progressBarColor = timeRemaining <= 10 ? palette.warningAccent : palette.primary;
 
   // Barra aumenta com o tempo (de 0 até largura total)
   const animatedWidth = progressAnim.interpolate({
@@ -142,7 +148,7 @@ export default function App() {
   if (!nameConfirmed) {
     return (
       <KeyboardAvoidingView
-        style={{ flex: 1, backgroundColor: PALETTE.background }}
+        style={{ flex: 1, backgroundColor: palette.background }}
         behavior={Platform.OS === "ios" ? "padding" : undefined}
       >
         <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -152,7 +158,7 @@ export default function App() {
             <TextInput
               style={styles.input}
               placeholder="Seu nome"
-              placeholderTextColor={PALETTE.textSecondary}
+              placeholderTextColor={palette.textSecondary}
               value={playerName}
               onChangeText={setPlayerName}
             />
@@ -165,7 +171,7 @@ export default function App() {
                   Alert.alert("Atenção", "Por favor, digite seu nome.");
                 }
               }}
-              color={PALETTE.primary}
+              color={palette.primary}
             />
           </SafeAreaView>
         </ScrollView>
@@ -175,7 +181,7 @@ export default function App() {
 
   return (
     <KeyboardAvoidingView
-      style={{ flex: 1, backgroundColor: PALETTE.background }}
+      style={{ flex: 1, backgroundColor: palette.background }}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
       <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
@@ -205,13 +211,13 @@ export default function App() {
   );
 }
 
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   container: {
     flexGrow: 1,
     justifyContent: "flex-start",
     alignItems: "center",
     paddingTop: 50,
-    backgroundColor: PALETTE.background,
+    backgroundColor: palette.background,
   },
   scrollContainer: {
     flexGrow: 1,
@@ -222,31 +228,35 @@ const styles = StyleSheet.create({
   title: {
     fontSize: 32,
     fontWeight: "bold",
-    color: PALETTE.primary,
+    fontFamily: FONTS.primary,
+    color: palette.primary,
   },
   subtitle: {
     fontSize: 18,
     marginTop: 10,
     marginBottom: 10,
-    color: PALETTE.textPrimary,
+    fontFamily: FONTS.regular,
+    color: palette.textPrimary,
   },
   hint: {
     fontSize: 20,
     marginVertical: 12,
     fontStyle: "italic",
-    color: PALETTE.secondary,
+    fontFamily: FONTS.regular,
+    color: palette.neonAccent,
     textAlign: "center",
     paddingHorizontal: 20,
   },
   input: {
     width: "80%",
     padding: 10,
-    borderColor: PALETTE.secondary,
+    borderColor: palette.neonAccent,
     borderWidth: 1,
     borderRadius: 5,
     marginBottom: 20,
-    color: PALETTE.textPrimary,
-    backgroundColor: PALETTE.background_darker,
+    fontFamily: FONTS.regular,
+    color: palette.textPrimary,
+    backgroundColor: palette.background_darker,
   },
   progressBarBackground: {
     height: 20,

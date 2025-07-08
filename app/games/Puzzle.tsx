@@ -14,7 +14,7 @@ import {
   Text,
   View,
 } from 'react-native';
-import { PALETTE } from '../(tabs)';
+import { useThemePalette } from '../../hooks/useThemePalette';
 import { loadPuzzleRecords, savePuzzleRecord } from '../../services/database'; // Integrado com o DB
 
 // --- BANCO DE DADOS DE IMAGENS LOCAIS (MODO CORRIGIDO) ---
@@ -49,6 +49,7 @@ const PIECE_MARGIN = 2;
 
 // --- COMPONENTE PRINCIPAL ---
 export default function PuzzleScreen() {
+  const palette = useThemePalette();
   const [gameState, setGameState] = useState<GameState>('menu');
   const [difficulty, setDifficulty] = useState<Difficulty>(3);
   const [image, setImage] = useState<number | null>(null);
@@ -62,9 +63,21 @@ export default function PuzzleScreen() {
   const [showReferenceImage, setShowReferenceImage] = useState(false);
   const [showVictoryAnimation, setShowVictoryAnimation] = useState(false);
 
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return (
+      <LinearGradient colors={['#1A1A1A', '#0D0D0D']} style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color="#BFFF00" />
+      </LinearGradient>
+    );
+  }
+
   const timerInterval = useRef<ReturnType<typeof setInterval> | null>(null);
   const pulseAnim = useRef(new Animated.Value(1)).current;
   const victoryAnim = useRef(new Animated.Value(0)).current;
+
+  // Criar estilos dinâmicos
+  const styles = createStyles(palette);
 
   // --- EFEITOS ---
   useEffect(() => {
@@ -267,7 +280,7 @@ export default function PuzzleScreen() {
 
     return (
       <Pressable onPress={() => handlePiecePress(index)}>
-        <Animated.View style={[styles.pieceContainer, { width: pieceSize, height: pieceSize, margin: PIECE_MARGIN / 2 }, isSelected && { transform: [{ scale: pulseAnim }], borderColor: PALETTE.primary }]}>
+        <Animated.View style={[styles.pieceContainer, { width: pieceSize, height: pieceSize, margin: PIECE_MARGIN / 2 }, isSelected && { transform: [{ scale: pulseAnim }], borderColor: palette.primary }]}>
           {image && <Image source={image} style={{ width: PUZZLE_CONTAINER_SIZE, height: PUZZLE_CONTAINER_SIZE, position: 'absolute', left: -col * pieceSize - col * PIECE_MARGIN, top: -row * pieceSize - row * PIECE_MARGIN }} />}
         </Animated.View>
       </Pressable>
@@ -276,14 +289,14 @@ export default function PuzzleScreen() {
 
   if (isLoading) {
     return (
-      <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
-        <ActivityIndicator size="large" color={PALETTE.primary} />
+      <LinearGradient colors={[palette.background, palette.background_darker]} style={styles.container}>
+        <ActivityIndicator size="large" color={palette.primary} />
       </LinearGradient>
     );
   }
 
   return (
-    <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
+    <LinearGradient colors={[palette.background, palette.background_darker]} style={styles.container}>
       <SafeAreaView style={{ flex: 1 }}>
         {gameState === 'menu' && (
           <View style={styles.menuContainer}>
@@ -418,36 +431,36 @@ export default function PuzzleScreen() {
 }
 
 // --- ESTILOS ---
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   container: { flex: 1 },
   menuContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 20 },
   gameContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
-  title: { fontSize: 48, color: PALETTE.textPrimary, fontFamily: 'Orbitron-Bold', marginBottom: 60, textAlign: 'center' },
+  title: { fontSize: 48, color: palette.textPrimary, fontFamily: 'Orbitron-Bold', marginBottom: 60, textAlign: 'center' },
   menuItem: { alignItems: 'center', marginBottom: 30, width: '100%' },
-  difficultyButton: { backgroundColor: PALETTE.primary, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 15, shadowColor: PALETTE.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 8, width: '80%' },
-  difficultyButtonText: { color: PALETTE.background_darker, fontSize: 20, fontFamily: 'Orbitron-Bold', letterSpacing: 2, textAlign: 'center' },
-  button: { backgroundColor: PALETTE.cardBackground, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', width: '80%' },
-  buttonText: { color: PALETTE.primary, fontSize: 20, fontFamily: 'Orbitron-Bold', textAlign: 'center' },
-  recordText: { color: PALETTE.textSecondary, marginTop: 10, fontSize: 14, fontFamily: 'Orbitron-Regular' },
+  difficultyButton: { backgroundColor: palette.primary, paddingVertical: 20, paddingHorizontal: 50, borderRadius: 15, shadowColor: palette.primary, shadowOffset: { width: 0, height: 0 }, shadowOpacity: 0.5, shadowRadius: 15, elevation: 8, width: '80%' },
+  difficultyButtonText: { color: palette.background_darker, fontSize: 20, fontFamily: 'Orbitron-Bold', letterSpacing: 2, textAlign: 'center' },
+  button: { backgroundColor: palette.cardBackground, paddingVertical: 18, paddingHorizontal: 40, borderRadius: 12, borderWidth: 1, borderColor: 'rgba(255, 255, 255, 0.1)', width: '80%' },
+  buttonText: { color: palette.primary, fontSize: 20, fontFamily: 'Orbitron-Bold', textAlign: 'center' },
+  recordText: { color: palette.textSecondary, marginTop: 10, fontSize: 14, fontFamily: 'Orbitron-Regular' },
   header: { width: '100%', flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', paddingHorizontal: 20, position: 'absolute', top: 20 },
-  headerButton: { color: PALETTE.primary, fontSize: 16, fontFamily: 'Orbitron-Bold' },
+  headerButton: { color: palette.primary, fontSize: 16, fontFamily: 'Orbitron-Bold' },
   statsContainer: { alignItems: 'center' },
-  statsText: { color: PALETTE.textPrimary, fontSize: 20, fontFamily: 'Orbitron-Bold' },
-  previewImage: { width: 40, height: 40, borderRadius: 8, borderWidth: 1, borderColor: PALETTE.primary },
-  puzzleContainer: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: PALETTE.background_darker, borderRadius: 10, padding: PIECE_MARGIN / 2 },
+  statsText: { color: palette.textPrimary, fontSize: 20, fontFamily: 'Orbitron-Bold' },
+  previewImage: { width: 40, height: 40, borderRadius: 8, borderWidth: 1, borderColor: palette.primary },
+  puzzleContainer: { flexDirection: 'row', flexWrap: 'wrap', backgroundColor: palette.background_darker, borderRadius: 10, padding: PIECE_MARGIN / 2 },
   pieceContainer: { backgroundColor: '#000', overflow: 'hidden', borderRadius: 6, borderWidth: 2, borderColor: 'transparent' },
   modalContainer: { flex: 1, backgroundColor: 'rgba(0, 0, 0, 0.85)', justifyContent: 'center', alignItems: 'center' },
-  modalContent: { backgroundColor: PALETTE.cardBackground, padding: 30, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: PALETTE.primary, width: '85%' },
-  winTitle: { fontSize: 40, fontFamily: 'Orbitron-Bold', color: PALETTE.primary, marginBottom: 15 },
-  winText: { fontSize: 18, color: PALETTE.textSecondary, fontFamily: 'Orbitron-Regular', marginBottom: 8 },
+  modalContent: { backgroundColor: palette.cardBackground, padding: 30, borderRadius: 20, alignItems: 'center', borderWidth: 1, borderColor: palette.primary, width: '85%' },
+  winTitle: { fontSize: 40, fontFamily: 'Orbitron-Bold', color: palette.primary, marginBottom: 15 },
+  winText: { fontSize: 18, color: palette.textSecondary, fontFamily: 'Orbitron-Regular', marginBottom: 8 },
   // Estilos para o modal da imagem de referência
   referenceModalContainer: { flex: 1, justifyContent: 'center', alignItems: 'center' },
   referenceModalOverlay: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0, 0, 0, 0.9)' },
-  referenceModalContent: { backgroundColor: PALETTE.cardBackground, borderRadius: 20, padding: 20, width: '90%', maxWidth: 400, borderWidth: 1, borderColor: PALETTE.primary, zIndex: 1 },
+  referenceModalContent: { backgroundColor: palette.cardBackground, borderRadius: 20, padding: 20, width: '90%', maxWidth: 400, borderWidth: 1, borderColor: palette.primary, zIndex: 1 },
   referenceHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 },
-  referenceTitle: { fontSize: 18, fontFamily: 'Orbitron-Bold', color: PALETTE.primary, flex: 1 },
-  closeButton: { width: 30, height: 30, borderRadius: 15, backgroundColor: PALETTE.primary, justifyContent: 'center', alignItems: 'center' },
-  closeButtonText: { fontSize: 16, fontWeight: 'bold', color: PALETTE.background },
+  referenceTitle: { fontSize: 18, fontFamily: 'Orbitron-Bold', color: palette.primary, flex: 1 },
+  closeButton: { width: 30, height: 30, borderRadius: 15, backgroundColor: palette.primary, justifyContent: 'center', alignItems: 'center' },
+  closeButtonText: { fontSize: 16, fontWeight: 'bold', color: palette.background },
   imageContainer: {
     width: '100%',
     alignItems: 'center',
@@ -483,7 +496,7 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     borderRadius: 15,
     borderWidth: 3,
-    borderColor: PALETTE.primary,
+    borderColor: palette.primary,
     overflow: 'hidden',
     backgroundColor: 'rgba(0, 0, 0, 0.3)',
   },
@@ -502,14 +515,14 @@ const styles = StyleSheet.create({
   victoryText: {
     fontSize: 32,
     fontFamily: 'Orbitron-Bold',
-    color: PALETTE.primary,
+    color: palette.primary,
     textAlign: 'center',
     marginBottom: 10,
   },
   victorySubText: {
     fontSize: 18,
     fontFamily: 'Orbitron-Regular',
-    color: PALETTE.textSecondary,
+    color: palette.textSecondary,
     textAlign: 'center',
   },
 });

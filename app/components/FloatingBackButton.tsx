@@ -2,12 +2,18 @@ import { router } from 'expo-router';
 import React, { useEffect, useRef } from 'react';
 import { Animated, Pressable, StyleSheet, Text } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { PALETTE } from '../(tabs)'; // Reutilizando nossa paleta
+import { useThemePalette } from '../../hooks/useThemePalette';
 
 export const FloatingBackButton = () => {
   // Hook para garantir que o botão não fique atrás da notch ou status bar
   const insets = useSafeAreaInsets();
+  const palette = useThemePalette();
   const fadeAnim = useRef(new Animated.Value(0)).current;
+
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return null;
+  }
 
   // Animação de fade-in para o botão aparecer suavemente
   useEffect(() => {
@@ -19,6 +25,8 @@ export const FloatingBackButton = () => {
     }).start();
   }, [fadeAnim]);
 
+  const styles = createStyles(palette);
+
   return (
     <Animated.View style={[styles.container, { top: insets.top + 10, opacity: fadeAnim }]}>
       <Pressable onPress={() => router.back()} style={({ pressed }) => [styles.button, { opacity: pressed ? 0.7 : 1 }]}>
@@ -28,7 +36,7 @@ export const FloatingBackButton = () => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   container: {
     position: 'absolute',
     left: 10,
@@ -48,7 +56,7 @@ const styles = StyleSheet.create({
     elevation: 5,
   },
   icon: {
-    color: PALETTE.textPrimary,
+    color: palette.textPrimary,
     fontSize: 28,
     fontWeight: 'bold',
     lineHeight: 32,

@@ -5,6 +5,8 @@ import {
     TouchableOpacity,
     View,
 } from "react-native";
+import { FONTS } from "../../hooks/useFonts";
+import { useThemePalette } from "../../hooks/useThemePalette";
 import { Letter } from "../types";
 
 interface KeyboardProps {
@@ -12,18 +14,12 @@ interface KeyboardProps {
   guessedLetters: Letter[];
 }
 
-const PALETTE = {
-  background: "#1A1A1A",
-  background_darker: "#0D0D0D",
-  primary: "#BFFF00", // Verde-Limão Vibrante
-  secondary: "#00FFFF", // Ciano
-  textPrimary: "#F5F5F5",
-  textSecondary: "#AAAAAA",
-};
-
 const alphabet: Letter[] = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("");
 
 const Keyboard: React.FC<KeyboardProps> = ({ onPress, guessedLetters }) => {
+  const palette = useThemePalette();
+  const styles = createStyles(palette);
+
   return (
     <View style={styles.keyboard}>
       {alphabet.map((letter) => {
@@ -53,7 +49,7 @@ const Keyboard: React.FC<KeyboardProps> = ({ onPress, guessedLetters }) => {
   );
 };
 
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   keyboard: {
     flexDirection: "row",
     flexWrap: "wrap",
@@ -70,21 +66,21 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   keyEnabled: {
-    backgroundColor: PALETTE.primary,
+    backgroundColor: palette.primary,
   },
   keyDisabled: {
-    backgroundColor: PALETTE.background_darker,
+    backgroundColor: palette.background_darker,
     opacity: 0.4,
   },
   keyText: {
     fontSize: 16,
-    fontWeight: "bold",
+    fontFamily: FONTS.primary,
   },
   textEnabled: {
-    color: PALETTE.background_darker,
+    color: palette.background_darker,
   },
   textDisabled: {
-    color: PALETTE.textSecondary,
+    color: palette.textSecondary,
   },
 });
 

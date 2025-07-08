@@ -6,6 +6,7 @@
 const tintColorLight = "#0a7ea4";
 const tintColorDark = "#fff";
 export const PALETTE = {
+  // Dark theme (primary)
   background: "#1A1A1A",
   background_darker: "#0D0D0D",
   primary: "#BFFF00",
@@ -16,6 +17,33 @@ export const PALETTE = {
   textSecondary: "#AAAAAA",
   textSecondary_darker: "#2A2A2A",
   BallTicTacToe: "#01c4e7",
+  // Neo-Brutalismo Gamer accents
+  neonAccent: "#00FFFF",
+  warningAccent: "#FF3030",
+  successAccent: "#39FF14",
+  glitchPurple: "#B026FF",
+  retroOrange: "#FF6B35",
+  // Borders and shadows for brutalist design
+  brutalistBorder: "#BFFF00",
+  shadowColor: "rgba(191, 255, 0, 0.3)",
+  
+  // Light theme variants
+  light: {
+    background: "#F5F5F5",
+    background_darker: "#E8E8E8",
+    primary: "#7CB342",
+    primary_darker: "#388E3C",
+    cardBackground: "#FFFFFF",
+    textPrimary: "#1A1A1A",
+    textSecondary: "#666666",
+    neonAccent: "#0091EA",
+    warningAccent: "#D32F2F",
+    successAccent: "#2E7D32",
+    glitchPurple: "#7B1FA2",
+    retroOrange: "#F57C00",
+    brutalistBorder: "#7CB342",
+    shadowColor: "rgba(124, 179, 66, 0.3)",
+  }
 };
 export const Colors = {
   light: {

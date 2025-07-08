@@ -1,4 +1,5 @@
-import { PALETTE } from '@/constants/Colors';
+import { FONTS } from '@/hooks/useFonts';
+import { useThemePalette } from '@/hooks/useThemePalette';
 import { getCosmicCorridorHighScore, initDB, saveCosmicCorridorHighScore } from '@/services/database';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
@@ -120,9 +121,19 @@ const useCosmicMusic = () => {
 
 // --- COMPONENTE PRINCIPAL DO JOGO ---
 export default function CosmicCorridorScreen() {
+    const palette = useThemePalette();
     const [gameState, setGameState] = useState<'initial' | 'difficulty_selection' | 'playing' | 'gameOver'>('initial');
     const [score, setScore] = useState(0);
     const [difficulty, setDifficulty] = useState<Difficulty>('Regular');
+
+    // Proteção contra paleta não inicializada
+    if (!palette) {
+        return (
+            <LinearGradient colors={['#1A1A1A', '#0D0D0D']} style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+                <ActivityIndicator size="large" color="#BFFF00" />
+            </LinearGradient>
+        );
+    }
     
     // Estados para recorde e autenticação
     const [highScore, setHighScore] = useState(0);
@@ -132,6 +143,9 @@ export default function CosmicCorridorScreen() {
     
     // Hook para música de fundo
     const { playMusic, stopMusic, pauseMusic, playExplosionSound, isMusicPlaying } = useCosmicMusic();
+    
+    // Criar estilos dinâmicos
+    const styles = createStyles(palette);
     
     // Função para alternar música
     const toggleMusic = () => {
@@ -280,7 +294,7 @@ export default function CosmicCorridorScreen() {
         <Text style={styles.title}>{gameState === 'gameOver' ? 'FIM DE JOGO' : 'CORREDOR CÓSMICO'}</Text>
         <View style={styles.highScoreContainer}>
           <Text style={styles.highScoreLabel}>RECORDE</Text>
-          {isLoading ? <ActivityIndicator color={PALETTE.primary} /> : 
+          {isLoading ? <ActivityIndicator color={palette.primary} /> : 
            isAuthenticated ? <Text style={styles.highScoreText}>{highScore}</Text> : 
            isBiometricSupported ? <TouchableOpacity onPress={handleAuthentication}><Emoji name="lock" size={20} /></TouchableOpacity> : 
            <Text style={styles.highScoreText}>{highScore}</Text>}
@@ -304,7 +318,7 @@ export default function CosmicCorridorScreen() {
     );
 
     return ( 
-      <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
+      <LinearGradient colors={[palette.background, palette.background_darker]} style={styles.container}>
         <SafeAreaView style={styles.safeArea}>
           {stars.map(star => <View key={star.id} style={[styles.star, { left: star.x, top: star.y, width: star.size, height: star.size }]} />)}
           {gameState === 'playing' && (
@@ -326,25 +340,25 @@ export default function CosmicCorridorScreen() {
 }
 
 // --- ESTILOS DO JOGO ---
-const styles = StyleSheet.create({
+const createStyles = (palette: any) => StyleSheet.create({
   container: { flex: 1 },
   safeArea: { flex: 1, alignItems: 'center', overflow: 'hidden' },
-  scoreText: { color: PALETTE.textPrimary, fontSize: 24, fontFamily: 'Orbitron-Bold', position: 'absolute', top: 60, zIndex: 10, textShadowColor: 'rgba(0, 0, 0, 0.5)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 3 },
+  scoreText: { color: palette.textPrimary, fontSize: 24, fontFamily: FONTS.primary, position: 'absolute', top: 60, zIndex: 10, textShadowColor: 'rgba(0, 0, 0, 0.5)', textShadowOffset: { width: 2, height: 2 }, textShadowRadius: 3 },
   gameArea: { flex: 1, width: '100%', height: '100%', position: 'relative' },
   player: { width: PLAYER_SIZE, height: PLAYER_SIZE, position: 'absolute', bottom: 80, justifyContent: 'center', alignItems: 'center' },
   playerEmoji: { fontSize: 40, transform: [{ rotate: '-45deg' }] },
   asteroid: { position: 'absolute', justifyContent: 'center', alignItems: 'center', opacity: 0.9 },
   star: { position: 'absolute', backgroundColor: 'white', borderRadius: 2, opacity: 0.7 },
   menuContainer: { position: 'absolute', top: 0, left: 0, right: 0, bottom: 0, backgroundColor: 'rgba(0,0,0,0.7)', justifyContent: 'center', alignItems: 'center', paddingHorizontal: 20 },
-  title: { fontSize: 36, fontFamily: 'Orbitron-Bold', color: PALETTE.textPrimary, textAlign: 'center', marginBottom: 40, textShadowColor: '#000', textShadowRadius: 5 },
-  finalScore: { fontSize: 22, fontFamily: 'Orbitron-Regular', color: PALETTE.primary, marginBottom: 40 },
-  startButton: { backgroundColor: PALETTE.primary, paddingVertical: 15, paddingHorizontal: 40, borderRadius: 10 },
-  startButtonText: { color: PALETTE.background_darker, fontSize: 20, fontFamily: 'Orbitron-Bold' },
-  difficultyButton: { backgroundColor: PALETTE.primary, paddingVertical: 15, borderRadius: 10, width: '80%', alignItems: 'center', marginBottom: 15 },
-  difficultyButtonText: { color: PALETTE.background_darker, fontSize: 18, fontFamily: 'Orbitron-Bold' },
+  title: { fontSize: 36, fontFamily: FONTS.primary, color: palette.textPrimary, textAlign: 'center', marginBottom: 40, textShadowColor: '#000', textShadowRadius: 5 },
+  finalScore: { fontSize: 22, fontFamily: FONTS.regular, color: palette.primary, marginBottom: 40 },
+  startButton: { backgroundColor: palette.primary, paddingVertical: 15, paddingHorizontal: 40, borderRadius: 10 },
+  startButtonText: { color: palette.background_darker, fontSize: 20, fontFamily: FONTS.primary },
+  difficultyButton: { backgroundColor: palette.primary, paddingVertical: 15, borderRadius: 10, width: '80%', alignItems: 'center', marginBottom: 15 },
+  difficultyButtonText: { color: palette.background_darker, fontSize: 18, fontFamily: FONTS.primary },
   highScoreContainer: { alignItems: 'center', marginBottom: 30, backgroundColor: 'rgba(0,0,0,0.2)', paddingVertical: 10, paddingHorizontal: 20, borderRadius: 15 },
-  highScoreLabel: { color: PALETTE.textSecondary, fontSize: 16, fontFamily: 'Orbitron-Regular' },
-  highScoreText: { color: PALETTE.primary, fontSize: 32, fontFamily: 'Orbitron-Bold' },
+  highScoreLabel: { color: palette.textSecondary, fontSize: 16, fontFamily: FONTS.regular },
+  highScoreText: { color: palette.primary, fontSize: 32, fontFamily: FONTS.primary },
   musicButton: { position: 'absolute', top: 60, right: 20, zIndex: 10, backgroundColor: 'rgba(0,0,0,0.5)', borderRadius: 25, width: 50, height: 50, justifyContent: 'center', alignItems: 'center' },
   musicButtonText: { fontSize: 24 },
 });

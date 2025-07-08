@@ -7,20 +7,8 @@ import { ActivityIndicator, Alert, Animated, Pressable, StatusBar, StyleSheet, T
 import * as LocalAuthentication from 'expo-local-authentication';
 import * as SQLite from 'expo-sqlite';
 import { Emoji } from '../../components/Emoji';
-
-
-// --- PALETA DE CORES E FONTES CONSISTENTE COM O PROJETO ---
-const PALETTE = {
-  background: '#1A1A1A',
-  background_darker: '#0D0D0D',
-  primary: '#BFFF00', // Verde-Limão Vibrante
-  secondary: '#00FFFF', // Ciano
-  textPrimary: '#F5F5F5',
-  textSecondary: '#AAAAAA',
-};
-
-// Novas cores para os botões, alinhadas com a estética "gamer"
-const GAME_COLORS = ['#FF4757', '#FFD700', PALETTE.secondary, PALETTE.primary];
+import { FONTS } from '../../hooks/useFonts';
+import { useThemePalette } from '../../hooks/useThemePalette';
 
 // --- HOOK PERSONALIZADO PARA GERIR OS SONS ---
 const useSounds = () => {
@@ -66,6 +54,7 @@ const useSounds = () => {
 
 // --- COMPONENTE PRINCIPAL DO JOGO ---
 export default function MemoryGameScreen() {
+  const palette = useThemePalette();
   const [level, setLevel] = useState(1);
   const [highScore, setHighScore] = useState(1);
   const [sequence, setSequence] = useState<number[]>([]);
@@ -79,6 +68,22 @@ export default function MemoryGameScreen() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   const { playSound, playGameOverSound } = useSounds();
+
+  // Proteção contra paleta não inicializada
+  if (!palette) {
+    return (
+      <LinearGradient colors={['#1A1A1A', '#0D0D0D']} style={{flex: 1, justifyContent: 'center', alignItems: 'center'}}>
+        <ActivityIndicator size="large" color="#BFFF00" />
+        <Text style={{color: '#BFFF00', fontSize: 16, marginTop: 10}}>Carregando...</Text>
+      </LinearGradient>
+    );
+  }
+
+  // Criar estilos dinâmicos
+  const styles = createStyles(palette);
+
+  // Cores dinâmicas dos botões do jogo, baseadas na paleta
+  const getGameColors = () => [palette.warningAccent, palette.retroOrange, palette.neonAccent, palette.primary];
   
   // --- LÓGICA DO BANCO DE DADOS (REESTRUTURADA E ESTABILIZADA) ---
   const db = useMemo(() => SQLite.openDatabaseSync('geniusGame.db'), []);
@@ -161,7 +166,8 @@ export default function MemoryGameScreen() {
   const nextLevel = () => {
     setIsPlayerTurn(false);
     setPlayerSequence([]);
-    const newSequence = [...sequence, Math.floor(Math.random() * GAME_COLORS.length)];
+    const gameColors = getGameColors();
+    const newSequence = [...sequence, Math.floor(Math.random() * gameColors.length)];
     setSequence(newSequence);
     setLevel(newSequence.length);
     playSequence(newSequence);
@@ -218,7 +224,7 @@ export default function MemoryGameScreen() {
   const statusText = isPlayerTurn ? 'A sua vez!' : isGameOver ? 'Pressione Iniciar' : 'Observe...';
 
   return (
-    <LinearGradient colors={[PALETTE.background, PALETTE.background_darker]} style={styles.container}>
+    <LinearGradient colors={[palette.background, palette.background_darker]} style={styles.container}>
       
       <StatusBar barStyle="light-content" />
       
@@ -229,7 +235,7 @@ export default function MemoryGameScreen() {
         </View>
         <View style={styles.scoreContainer}>
             <Text style={styles.scoreLabel}>RECORDE</Text>
-            {isLoading ? <ActivityIndicator color={PALETTE.textPrimary} /> : 
+            {isLoading ? <ActivityIndicator color={palette.textPrimary} /> : 
              isAuthenticated ? <Text style={styles.scoreText}>{highScore}</Text> : 
              isBiometricSupported ? <TouchableOpacity onPress={handleAuthentication}><Emoji name="lock" size={20} /></TouchableOpacity> : 
              <Text style={styles.scoreText}>{highScore}</Text>}
@@ -243,7 +249,7 @@ export default function MemoryGameScreen() {
           </Pressable>
         ) : (
           <View style={styles.gameBoard}>
-            {GAME_COLORS.map((color, index) => {
+            {getGameColors().map((color: string, index: number) => {
                 const isActive = activeColorIndex === index;
                 const isPlayerPressed = playerPressedIndex === index;
                 const isHighlighted = isActive || isPlayerPressed;
@@ -275,27 +281,27 @@ export default function MemoryGameScreen() {
   );
 }
 
-// --- ESTILOS PROFISSIONAIS ---
-const styles = StyleSheet.create({
+// --- ESTILOS DINÂMICOS ---
+const createStyles = (palette: any) => StyleSheet.create({
   container: { flex: 1, justifyContent: 'space-between', alignItems: 'center', },
   header: { width: '100%', flexDirection: 'row', justifyContent: 'space-around', paddingTop: 60, paddingBottom: 20, },
   scoreContainer: { alignItems: 'center', minHeight: 50, justifyContent: 'center' },
-  scoreLabel: { color: PALETTE.textSecondary, fontSize: 14, fontFamily: 'Orbitron-Regular', letterSpacing: 2, },
-  scoreText: { color: PALETTE.textPrimary, fontSize: 32, fontFamily: 'Orbitron-Bold', },
+  scoreLabel: { color: palette.textSecondary, fontSize: 14, fontFamily: FONTS.regular, letterSpacing: 2, },
+  scoreText: { color: palette.textPrimary, fontSize: 32, fontFamily: FONTS.primary, },
   gameContainer: { flex: 1, justifyContent: 'center', alignItems: 'center', },
   footer: { height: 100, justifyContent: 'center', alignItems: 'center' },
   startButton: { 
-    backgroundColor: PALETTE.primary, 
+    backgroundColor: palette.primary, 
     paddingVertical: 20, 
     paddingHorizontal: 50, 
     borderRadius: 15, 
-    shadowColor: PALETTE.primary,
+    shadowColor: palette.primary,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.5, 
     shadowRadius: 15,
     elevation: 8, 
   },
-  startButtonText: { color: PALETTE.background_darker, fontSize: 24, fontFamily: 'Orbitron-Bold', letterSpacing: 2 },
+  startButtonText: { color: palette.background_darker, fontSize: 24, fontFamily: FONTS.primary, letterSpacing: 2 },
   gameBoard: { width: 320, height: 320, flexDirection: 'row', flexWrap: 'wrap', justifyContent: 'center', alignItems: 'center', },
   gameButtonWrapper: { width: '50%', height: '50%', padding: 10, },
   gameButton: { 
@@ -314,5 +320,5 @@ const styles = StyleSheet.create({
     borderColor: 'rgba(255,255,255,0.5)',
     opacity: 1, // Opacidade de 100% quando ativo
   },
-  statusText: { color: PALETTE.textSecondary, fontSize: 18, fontFamily: 'Orbitron-Regular' },
+  statusText: { color: palette.textSecondary, fontSize: 18, fontFamily: FONTS.regular },
 });

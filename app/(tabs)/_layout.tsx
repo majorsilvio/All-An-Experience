@@ -5,45 +5,66 @@ import { Platform } from 'react-native';
 import { HapticTab } from '@/components/HapticTab';
 import { IconSymbol } from '@/components/ui/IconSymbol';
 import TabBarBackground from '@/components/ui/TabBarBackground';
-import { Colors } from '@/constants/Colors';
 import { useColorScheme } from '@/hooks/useColorScheme';
+import { FONTS } from '@/hooks/useFonts';
+import { useThemePalette } from '@/hooks/useThemePalette';
 
 export default function TabLayout() {
   const colorScheme = useColorScheme();
+  const palette = useThemePalette();
 
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors[colorScheme ?? 'light'].tint,
+        tabBarActiveTintColor: palette.primary,
+        tabBarInactiveTintColor: palette.textSecondary,
         headerShown: false,
         tabBarButton: HapticTab,
         tabBarBackground: TabBarBackground,
         tabBarStyle: Platform.select({
           ios: {
             position: 'absolute',
+            backgroundColor: palette.cardBackground,
+            borderTopWidth: 3,
+            borderTopColor: palette.brutalistBorder,
+            shadowColor: palette.shadowColor,
+            shadowOffset: { width: 0, height: -4 },
+            shadowOpacity: 0.6,
+            shadowRadius: 8,
+            elevation: 20,
           },
-          default: {},
+          default: {
+            backgroundColor: palette.cardBackground,
+            borderTopWidth: 3,
+            borderTopColor: palette.brutalistBorder,
+            elevation: 20,
+          },
         }),
+        tabBarLabelStyle: {
+          fontFamily: FONTS.gaming,
+          fontSize: 7,
+          letterSpacing: 0.3,
+        },
       }}>
       <Tabs.Screen
         name="index"
         options={{
-          title: 'Home',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="house.fill" color={color} />,
+          title: 'HOME',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="house.fill" color={color} />,
         }}
       />
       <Tabs.Screen
         name="categories"
         options={{
-          title: 'Categorias',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="square.grid.3x3.fill" color={color} />,
+          title: 'CATEGORIAS',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="square.grid.3x3.fill" color={color} />,
         }}
       />
        <Tabs.Screen
         name="favorites"
         options={{
-          title: 'Favoritos',
-          tabBarIcon: ({ color }) => <IconSymbol size={28} name="star.fill" color={color} />,
+          title: 'FAVORITOS',
+          tabBarIcon: ({ color }) => <IconSymbol size={24} name="star.fill" color={color} />,
         }}
       />
     </Tabs>
