@@ -54,6 +54,7 @@ export default function GameLayout() {
       <Stack.Screen name="MemoryGame" options={{ title: 'Genius' }} />
       <Stack.Screen name="TicTacToe" options={{ title: 'Jogo da Velha' }} />
       <Stack.Screen name="Strength" options={{ title: 'Forca' }} />
+      <Stack.Screen name="Minesweeper" options={{ title: 'Campo Minado' }} />
 
     </Stack>
   );

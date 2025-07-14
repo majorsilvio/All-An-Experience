@@ -14,6 +14,7 @@ export const games = [
   { title: "Jogo da Memória", route: "/games/MemoryGame", emoji: "cards", description: "Teste sua memória", category: "Quebra-Cabeça" },
   { title: "Jogo da Velha", route: "/games/TicTacToe", emoji: "tic-tac-toe", description: "Um clássico rápido", category: "Clássicos de Tabuleiro" },
   { title: "Xadrez", route: "/games/Chess", emoji: "chess", description: "Estratégia e tática", category: "Estratégia" },
+  { title: "Campo Minado", route: "/games/Minesweeper", emoji: "bomb", description: "Encontre as minas ocultas", category: "Quebra-Cabeça" },
   { title: "Corredor Cósmico", route: "/games/CosmicCorridor", emoji: "rocket", description: "Desvie dos obstáculos", category: "Ação" },
   { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "spiral", description: "Controle com movimento", category: "Habilidade" },
   { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "puzzle", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
