@@ -18,7 +18,7 @@ export const games = [
   { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "spiral", description: "Controle com movimento", category: "Habilidade" },
   { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "puzzle", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
   { title: "Forca", route: "/games/Strength", emoji: "hangman", description: "Adivinhe a palavra", category: "Palavras" },
-
+  { title: "Show do Milhão", route: "/games/ShowDoMilhao", emoji: "trophy", description: "Teste seus conhecimentos e ganhe!", category: "Quiz" },
 ] as const;
 
 export type Game = typeof games[number];
@@ -547,3 +547,4 @@ const createStyles = (palette: any) => StyleSheet.create({
 
 // Export para outras telas
 export { createStyles };
+
