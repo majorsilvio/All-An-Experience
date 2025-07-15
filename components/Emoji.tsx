@@ -19,6 +19,7 @@ const EMOJI_MAP: Record<string, string> = {
   'bulb': '💡',
   'cards': '🃏',
   'hangman': '🤔',
+  'bomb': '💣',
   
   // Símbolos e interface
   'heart': '❤️',

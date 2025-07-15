@@ -178,7 +178,7 @@ export default function ShowDoMilhao() {
   const fadeAnim = useRef(new Animated.Value(0)).current;
 
   // Timer
-  const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // ===================================================================
   // EFEITOS E INICIALIZAÇÃO
