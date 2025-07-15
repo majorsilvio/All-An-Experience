@@ -19,6 +19,7 @@ export const games = [
   { title: "Labirinto Físico", route: "/games/Labyrinth", emoji: "spiral", description: "Controle com movimento", category: "Habilidade" },
   { title: "Quebra-Cabeça", route: "/games/Puzzle", emoji: "puzzle", description: "Descubra o Enígima das imagens", category: "Quebra-Cabeça" },
   { title: "Forca", route: "/games/Strength", emoji: "hangman", description: "Adivinhe a palavra", category: "Palavras" },
+  { title: "Caça Palavras", route: "/games/WordSearch", emoji: "search", description: "Encontre as palavras escondidas", category: "Palavras" },
   { title: "Show do Milhão", route: "/games/ShowDoMilhao", emoji: "trophy", description: "Teste seus conhecimentos e ganhe!", category: "Quiz" },
 ] as const;
 

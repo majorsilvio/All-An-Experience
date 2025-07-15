@@ -55,6 +55,7 @@ export default function GameLayout() {
       <Stack.Screen name="TicTacToe" options={{ title: 'Jogo da Velha' }} />
       <Stack.Screen name="Strength" options={{ title: 'Forca' }} />
       <Stack.Screen name="Minesweeper" options={{ title: 'Campo Minado' }} />
+      <Stack.Screen name="WordSearch" options={{ title: 'Caça Palavras' }} />
 
     </Stack>
   );
