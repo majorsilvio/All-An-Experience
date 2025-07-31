@@ -1,6 +1,7 @@
 import { FONTS } from '@/hooks/useFonts';
 import { useThemePalette } from '@/hooks/useThemePalette';
 import { Ionicons } from '@expo/vector-icons';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -189,6 +190,7 @@ export default function ShowDoMilhao() {
   useEffect(() => {
     DatabaseService.init();
     loadBestScore();
+    loadPlayerName(); // Carregar o nome salvo
   }, []);
 
   useEffect(() => {
@@ -227,6 +229,24 @@ export default function ShowDoMilhao() {
     }
   };
 
+  const playSuccessSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/sounds/Sucessed.mp3')
+      );
+      await sound.playAsync();
+      
+      // Limpar o som após tocar
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log('Erro ao tocar som de sucesso:', error);
+    }
+  };
+
   const blinkCorrectAnswer = () => {
     Animated.sequence([
       Animated.timing(correctAnswerBlinkAnim, {
@@ -260,6 +280,26 @@ export default function ShowDoMilhao() {
         useNativeDriver: true,
       }),
     ]).start();
+  };
+
+  const savePlayerName = async (name: string) => {
+    try {
+      await AsyncStorage.setItem('@millionaire_player_name', name);
+    } catch (error) {
+      console.log('Erro ao salvar nome do jogador:', error);
+    }
+  };
+
+  const loadPlayerName = async () => {
+    try {
+      const savedName = await AsyncStorage.getItem('@millionaire_player_name');
+      if (savedName) {
+        setPlayerName(savedName);
+        setTempPlayerName(savedName);
+      }
+    } catch (error) {
+      console.log('Erro ao carregar nome do jogador:', error);
+    }
   };
 
   const loadBestScore = async () => {
@@ -392,6 +432,9 @@ export default function ShowDoMilhao() {
 
   const handleCorrectAnswer = async () => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
+    
+    // Tocar som de sucesso
+    await playSuccessSound();
     
     if (currentLevel === 15) {
       // Jogador ganhou o jogo completo!
@@ -539,12 +582,13 @@ export default function ShowDoMilhao() {
     setGameState('setup');
   };
 
-  const confirmSetup = () => {
+  const confirmSetup = async () => {
     if (!tempPlayerName.trim()) {
       Alert.alert('Atenção', 'Por favor, digite seu nome!');
       return;
     }
     setPlayerName(tempPlayerName);
+    await savePlayerName(tempPlayerName); // Salvar o nome
     setGameState('menu');
   };
 
@@ -568,7 +612,9 @@ export default function ShowDoMilhao() {
         <View style={styles.menuButtons}>
           <TouchableOpacity style={[styles.menuButton, { backgroundColor: palette.cardBackground, borderColor: palette.primary }]} onPress={startSetup}>
             <Ionicons name="settings" size={24} color={palette.primary} />
-            <Text style={[styles.menuButtonText, { color: palette.textPrimary }]}>Configurar Jogo</Text>
+            <Text style={[styles.menuButtonText, { color: palette.textPrimary }]}>
+              {playerName ? 'Alterar Configurações' : 'Configurar Jogo'}
+            </Text>
           </TouchableOpacity>
 
           <TouchableOpacity 
@@ -577,7 +623,7 @@ export default function ShowDoMilhao() {
           >
             <Ionicons name="play" size={24} color={palette.background} />
             <Text style={[styles.menuButtonText, styles.playButtonText, { color: palette.background }]}>
-              {playerName ? `Jogar (${playerName})` : 'Configure seu nome primeiro'}
+              {playerName ? `Jogar como ${playerName}` : 'Configure seu nome primeiro'}
             </Text>
           </TouchableOpacity>
 
