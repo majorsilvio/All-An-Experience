@@ -1,6 +1,7 @@
 import { FONTS } from '@/hooks/useFonts';
 import { useThemePalette } from '@/hooks/useThemePalette';
 import { Ionicons } from '@expo/vector-icons';
+import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
 import * as SQLite from 'expo-sqlite';
@@ -176,6 +177,7 @@ export default function ShowDoMilhao() {
 
   // Animações
   const fadeAnim = useRef(new Animated.Value(0)).current;
+  const correctAnswerBlinkAnim = useRef(new Animated.Value(1)).current;
 
   // Timer
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -206,6 +208,59 @@ export default function ShowDoMilhao() {
   // ===================================================================
   // FUNÇÕES AUXILIARES
   // ===================================================================
+
+  const playGameOverSound = async () => {
+    try {
+      const { sound } = await Audio.Sound.createAsync(
+        require('../../assets/sounds/game-over.wav')
+      );
+      await sound.playAsync();
+      
+      // Limpar o som após tocar
+      sound.setOnPlaybackStatusUpdate((status) => {
+        if (status.isLoaded && status.didJustFinish) {
+          sound.unloadAsync();
+        }
+      });
+    } catch (error) {
+      console.log('Erro ao tocar som de game over:', error);
+    }
+  };
+
+  const blinkCorrectAnswer = () => {
+    Animated.sequence([
+      Animated.timing(correctAnswerBlinkAnim, {
+        toValue: 0.3,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(correctAnswerBlinkAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(correctAnswerBlinkAnim, {
+        toValue: 0.3,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(correctAnswerBlinkAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(correctAnswerBlinkAnim, {
+        toValue: 0.3,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+      Animated.timing(correctAnswerBlinkAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  };
 
   const loadBestScore = async () => {
     try {
@@ -302,6 +357,9 @@ export default function ShowDoMilhao() {
     setEliminatedAnswers([]);
     setIsAnswering(false);
     
+    // Resetar animação de piscar
+    correctAnswerBlinkAnim.setValue(1);
+    
     // Animação de entrada
     Animated.timing(fadeAnim, {
       toValue: 1,
@@ -349,7 +407,17 @@ export default function ShowDoMilhao() {
 
   const handleIncorrectAnswer = async () => {
     await Haptics.notificationAsync(Haptics.NotificationFeedbackType.Error);
-    endGame(false);
+    
+    // Tocar som de game over
+    await playGameOverSound();
+    
+    // Fazer a resposta correta piscar
+    blinkCorrectAnswer();
+    
+    // Aguardar um pouco para mostrar a resposta correta piscando antes de terminar o jogo
+    setTimeout(() => {
+      endGame(false);
+    }, 2000);
   };
 
   const handleTimeUp = () => {
@@ -603,29 +671,38 @@ export default function ShowDoMilhao() {
             const isCorrect = answer === currentQuestion.correct_answer;
             const isEliminated = eliminatedAnswers.includes(answer);
             const isIncorrect = selectedAnswer && !isCorrect && isSelected;
+            const shouldBlink = isCorrect && selectedAnswer && selectedAnswer !== answer;
             
             return (
-              <TouchableOpacity
+              <Animated.View
                 key={index}
                 style={[
-                  styles.answerButton,
-                  { backgroundColor: palette.cardBackground },
-                  isSelected && { borderColor: palette.primary, backgroundColor: palette.cardBackground },
-                  isSelected && isCorrect && { backgroundColor: palette.successAccent, borderColor: palette.successAccent },
-                  isIncorrect && { backgroundColor: palette.warningAccent, borderColor: palette.warningAccent },
-                  isEliminated && { opacity: 0.3, backgroundColor: palette.background_darker },
+                  { opacity: shouldBlink ? correctAnswerBlinkAnim : 1 }
                 ]}
-                onPress={() => handleAnswer(answer)}
-                disabled={isAnswering || isEliminated}
               >
-                <Text style={[
-                  styles.answerText,
-                  { color: palette.textPrimary },
-                  isEliminated && { textDecorationLine: 'line-through' }
-                ]}>
-                  {String.fromCharCode(65 + index)}) {answer}
-                </Text>
-              </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.answerButton,
+                    { backgroundColor: palette.cardBackground },
+                    isSelected && { borderColor: palette.primary, backgroundColor: palette.cardBackground },
+                    isSelected && isCorrect && { backgroundColor: palette.successAccent, borderColor: palette.successAccent },
+                    isIncorrect && { backgroundColor: palette.warningAccent, borderColor: palette.warningAccent },
+                    isEliminated && { opacity: 0.3, backgroundColor: palette.background_darker },
+                    shouldBlink && { backgroundColor: palette.successAccent, borderColor: palette.successAccent },
+                  ]}
+                  onPress={() => handleAnswer(answer)}
+                  disabled={isAnswering || isEliminated}
+                >
+                  <Text style={[
+                    styles.answerText,
+                    { color: palette.textPrimary },
+                    isEliminated && { textDecorationLine: 'line-through' },
+                    (isSelected && isCorrect || shouldBlink) && { color: palette.background, fontWeight: 'bold' },
+                  ]}>
+                    {String.fromCharCode(65 + index)}) {answer}
+                  </Text>
+                </TouchableOpacity>
+              </Animated.View>
             );
           })}
         </View>
