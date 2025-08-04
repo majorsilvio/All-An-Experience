@@ -1,20 +1,18 @@
-import { Audio } from 'expo-av';
 import * as Haptics from 'expo-haptics';
 import { LinearGradient } from 'expo-linear-gradient';
-import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { 
-  Alert, 
-  Animated, 
-  Dimensions, 
-  Pressable, 
-  ScrollView, 
-  StatusBar, 
-  StyleSheet, 
-  Text, 
-  TextInput,
-  TouchableOpacity, 
-  View 
+import React, { useCallback, useEffect, useRef, useState } from 'react';
+import {
+    Animated,
+    Dimensions,
+    Pressable,
+    ScrollView,
+    StatusBar,
+    StyleSheet,
+    Text,
+    TextInput,
+    View
 } from 'react-native';
+import { GestureHandlerRootView, PinchGestureHandler, PanGestureHandler, State } from 'react-native-gesture-handler';
 import WinnerAnimation from '../../components/WinnerAnimation';
 import { FONTS } from '../../hooks/useFonts';
 import { useThemePalette } from '../../hooks/useThemePalette';
@@ -77,6 +75,25 @@ export default function WordSearch() {
   // Animações
   const fadeAnim = useState(new Animated.Value(1))[0];
   const scaleAnim = useState(new Animated.Value(1))[0];
+
+  // Configurações de zoom
+  const MIN_SCALE = 0.7;  // Zoom mínimo (70%)
+  const MAX_SCALE = 3.0;  // Zoom máximo (300%)
+  const DEFAULT_SCALE = 1.0; // Escala padrão
+
+  // Refs para controle de zoom e pan
+  const scale = useRef(new Animated.Value(DEFAULT_SCALE)).current;
+  const lastScale = useRef(DEFAULT_SCALE);
+  
+  // Estados para pan (arrastar)
+  const translateX = useRef(new Animated.Value(0)).current;
+  const translateY = useRef(new Animated.Value(0)).current;
+  const lastTranslateX = useRef(0);
+  const lastTranslateY = useRef(0);
+
+  // Refs para gesture handlers
+  const pinchRef = useRef(null);
+  const panRef = useRef(null);
 
   // Effect para garantir que não haja transparência durante o jogo
   useEffect(() => {
@@ -174,6 +191,9 @@ export default function WordSearch() {
 
   // Função para gerar o grid do jogo
   const generateGrid = useCallback((theme: WordSearchTheme, difficulty: DifficultyLevel) => {
+    // Reset zoom ao iniciar novo jogo
+    resetZoom();
+    
     const config = DIFFICULTY_CONFIG[difficulty];
     const gridSize = config.gridSize;
     const wordsCount = config.wordsCount;
@@ -251,6 +271,56 @@ export default function WordSearch() {
       fadeAnim.setValue(1);
     }
   }, [selectedTheme, selectedDifficulty, generateGrid, fadeAnim]);
+
+  // Handlers para gesto de pinça (zoom)
+  const onPinchGestureEvent = Animated.event(
+    [{ nativeEvent: { scale: scale } }],
+    { useNativeDriver: false }
+  );
+
+  const onPinchHandlerStateChange = (event: any) => {
+    if (event.nativeEvent.oldState === State.ACTIVE) {
+      let newScale = lastScale.current * event.nativeEvent.scale;
+      newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, newScale));
+      
+      lastScale.current = newScale;
+      scale.setValue(newScale);
+    }
+  };
+
+  // Handlers para pan (arrastar)
+  const onPanGestureEvent = Animated.event(
+    [{ 
+      nativeEvent: { 
+        translationX: translateX,
+        translationY: translateY 
+      } 
+    }],
+    { useNativeDriver: false }
+  );
+
+  const onPanStateChange = (event: any) => {
+    if (event.nativeEvent.oldState === State.ACTIVE) {
+      lastTranslateX.current += event.nativeEvent.translationX;
+      lastTranslateY.current += event.nativeEvent.translationY;
+      
+      translateX.setValue(lastTranslateX.current);
+      translateY.setValue(lastTranslateY.current);
+    }
+  };
+
+  // Função para resetar o zoom e posição
+  const resetZoom = () => {
+    lastScale.current = DEFAULT_SCALE;
+    lastTranslateX.current = 0;
+    lastTranslateY.current = 0;
+    
+    Animated.parallel([
+      Animated.timing(scale, { toValue: DEFAULT_SCALE, duration: 300, useNativeDriver: false }),
+      Animated.timing(translateX, { toValue: 0, duration: 300, useNativeDriver: false }),
+      Animated.timing(translateY, { toValue: 0, duration: 300, useNativeDriver: false })
+    ]).start();
+  };
 
   // Função para verificar se duas células estão em linha reta
   const areInStraightLine = useCallback((cell1: { row: number; col: number }, cell2: { row: number; col: number }) => {
@@ -673,6 +743,7 @@ export default function WordSearch() {
     setFoundWords([]);
     setSelectedCells([]);
     setIsSelecting(false);
+    resetZoom(); // Reset zoom ao voltar ao menu
   }, []);
 
   // Renderização das telas
@@ -925,6 +996,14 @@ export default function WordSearch() {
                 <Text style={[styles.clearButtonText, { color: palette.background }]}>✕</Text>
               </Pressable>
             )}
+
+            {/* Botão para resetar zoom */}
+            <Pressable
+              style={[styles.zoomResetButton, { backgroundColor: palette.neonAccent }]}
+              onPress={resetZoom}
+            >
+              <Text style={[styles.zoomResetButtonText, { color: palette.background }]}>🔍</Text>
+            </Pressable>
           </View>
 
           <ScrollView 
@@ -1004,14 +1083,38 @@ export default function WordSearch() {
             </View>
 
             {/* Grid do jogo */}
-            <View style={[
-              styles.gridContainer, 
-              { 
-                width: (cellSize * config.gridSize) + (config.gridSize * cellMargin) + 20,
-                maxWidth: screenWidth - 20
-              }
-            ]}>
-              {grid.map((row, rowIndex) => (
+            <PanGestureHandler
+              ref={panRef}
+              onGestureEvent={onPanGestureEvent}
+              onHandlerStateChange={onPanStateChange}
+              simultaneousHandlers={pinchRef}
+              minPointers={1}
+              maxPointers={1}
+            >
+              <Animated.View style={styles.panContainer}>
+                <PinchGestureHandler
+                  ref={pinchRef}
+                  onGestureEvent={onPinchGestureEvent}
+                  onHandlerStateChange={onPinchHandlerStateChange}
+                  simultaneousHandlers={panRef}
+                >
+                  <Animated.View style={[
+                    {
+                      transform: [
+                        { scale: scale },
+                        { translateX: translateX },
+                        { translateY: translateY }
+                      ]
+                    }
+                  ]}>
+                    <View style={[
+                      styles.gridContainer, 
+                      { 
+                        width: (cellSize * config.gridSize) + (config.gridSize * cellMargin) + 20,
+                        maxWidth: screenWidth - 20
+                      }
+                    ]}>
+                  {grid.map((row, rowIndex) => (
                 <View key={rowIndex} style={styles.gridRow}>
                   {row.map((cell, colIndex) => {
                     const isInCurrentSelection = currentSelection.some(pos => pos.row === rowIndex && pos.col === colIndex);
@@ -1057,7 +1160,11 @@ export default function WordSearch() {
                   })}
                 </View>
               ))}
-            </View>
+                    </View>
+                  </Animated.View>
+                </PinchGestureHandler>
+              </Animated.View>
+            </PanGestureHandler>
 
             {/* Progresso */}
             <View style={styles.progressContainer}>
@@ -1152,14 +1259,14 @@ export default function WordSearch() {
 
   // Renderização principal
   return (
-    <>
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <StatusBar barStyle="light-content" backgroundColor={palette.background_darker} />
       {gameState === 'name' && renderPlayerNameInput()}
       {gameState === 'theme' && renderThemeSelection()}
       {gameState === 'difficulty' && renderDifficultySelection()}
       {gameState === 'playing' && renderGame()}
       {gameState === 'won' && renderWinScreen()}
-    </>
+    </GestureHandlerRootView>
   );
 }
 
@@ -1285,6 +1392,24 @@ const createStyles = (palette: any) => StyleSheet.create({
     fontFamily: FONTS.primary,
     fontWeight: 'bold',
   },
+  zoomResetButton: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+    elevation: 3,
+    shadowColor: palette.shadowColor || '#000000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.25,
+    shadowRadius: 3.84,
+    marginLeft: 10,
+  },
+  zoomResetButtonText: {
+    fontSize: 18,
+    fontFamily: FONTS.primary,
+    fontWeight: 'bold',
+  },
   gameScrollView: {
     flex: 1,
     backgroundColor: palette.background,
@@ -1357,6 +1482,12 @@ const createStyles = (palette: any) => StyleSheet.create({
     alignSelf: 'center',
     padding: 10,
     borderRadius: 10,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  panContainer: {
+    flex: 1,
+    width: '100%',
     justifyContent: 'center',
     alignItems: 'center',
   },
