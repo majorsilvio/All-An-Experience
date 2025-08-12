@@ -46,6 +46,8 @@ export default function App() {
   const [gameOver, setGameOver] = useState<boolean>(false);
   const [wordsCompleted, setWordsCompleted] = useState<number>(0);
   const [totalTimeBonus, setTotalTimeBonus] = useState<number>(0);
+  const [usedWords, setUsedWords] = useState<string[]>([]);
+  const [allWordsCompleted, setAllWordsCompleted] = useState<boolean>(false);
   const maxGuesses = 6;
 
   // Animated value para a barra de progresso
@@ -86,15 +88,7 @@ export default function App() {
 
     if (time >= maxTime) {
       setGameOver(true);
-      const message = gameMode === 'survival' 
-        ? `${playerName}, você sobreviveu por ${wordsCompleted} palavra${wordsCompleted !== 1 ? 's' : ''}!`
-        : `${playerName}, você perdeu! A palavra era: ${currentWord.word}`;
-      
-      Alert.alert(
-        gameMode === 'survival' ? "Fim da Sobrevivência!" : "Tempo esgotado!",
-        message,
-        [{ text: "Jogar novamente", onPress: resetGame }]
-      );
+      // Não mostrar alert aqui, vamos mostrar uma tela personalizada
       return;
     }
 
@@ -116,7 +110,26 @@ export default function App() {
     // Reset zoom primeiro
     resetTransform();
     
-    const randomWord = words[Math.floor(Math.random() * words.length)];
+    let randomWord: WordItem;
+    
+    if (gameMode === 'survival') {
+      // No modo sobrevivência, verificar se ainda há palavras disponíveis
+      const availableWords = words.filter(word => !usedWords.includes(word.word));
+      
+      if (availableWords.length === 0) {
+        // Todas as palavras foram completadas!
+        setAllWordsCompleted(true);
+        return;
+      }
+      
+      randomWord = availableWords[Math.floor(Math.random() * availableWords.length)];
+      // Adicionar a palavra à lista de palavras usadas
+      setUsedWords(prev => [...prev, randomWord.word]);
+    } else {
+      // Modo normal: palavra aleatória qualquer
+      randomWord = words[Math.floor(Math.random() * words.length)];
+    }
+    
     setCurrentWord(randomWord);
     setGuessedLetters([]);
     setWrongGuesses(0);
@@ -131,7 +144,7 @@ export default function App() {
       if (wordsCompleted === 0 && time === 0) {
         // Primeira vez jogando modo sobrevivência
         setTime(0);
-        setMaxTime(20);
+        setMaxTime(7);
         setTotalTimeBonus(0);
       }
       // Para palavras subsequentes, manter o tempo atual e maxTime com bônus
@@ -155,6 +168,8 @@ export default function App() {
     setGuessedLetters([]);
     setWrongGuesses(0);
     setCurrentWord({ word: "", hint: "" });
+    setUsedWords([]);
+    setAllWordsCompleted(false);
   };
 
   const getTimeForWord = (word: string) => {
@@ -173,15 +188,7 @@ export default function App() {
       setWrongGuesses(newWrongGuesses);
       if (newWrongGuesses >= maxGuesses) {
         setGameOver(true);
-        const message = gameMode === 'survival' 
-          ? `${playerName}, você sobreviveu por ${wordsCompleted} palavra${wordsCompleted !== 1 ? 's' : ''}! A palavra era: ${currentWord.word}`
-          : `${playerName}, a palavra era: ${currentWord.word}`;
-        
-        Alert.alert(
-          gameMode === 'survival' ? "Fim da Sobrevivência!" : "Você perdeu!",
-          message,
-          [{ text: "Jogar novamente", onPress: () => resetGame() }]
-        );
+        // Não mostrar alert aqui, vamos mostrar uma tela personalizada
       }
     } else {
       // Letra correta! No modo sobrevivência, adicionar tempo bônus
@@ -362,6 +369,9 @@ export default function App() {
                 <Text style={styles.modeBonusInfo}>
                   💡 Bônus: +tempo por letra correta + bônus de conclusão
                 </Text>
+                <Text style={styles.modeBonusInfo}>
+                  🎯 Desafio: {words.length} palavras únicas para completar!
+                </Text>
                 <Button
                   title="Sobreviver"
                   onPress={() => {
@@ -388,6 +398,164 @@ export default function App() {
     );
   }
 
+  // Tela de parabéns por completar todas as palavras
+  if (allWordsCompleted) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: palette.background }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <SafeAreaView style={styles.container}>
+              <Text style={[styles.title, { color: palette.primary, fontSize: 28 }]}>
+                🏆 PARABÉNS! 🏆
+              </Text>
+              
+              <View style={styles.victoryContainer}>
+                <Text style={styles.victoryTitle}>
+                  {playerName}, você é um MESTRE das palavras!
+                </Text>
+                
+                <Text style={styles.victoryStats}>
+                  ✨ Conquista Épica Desbloqueada! ✨
+                </Text>
+                
+                <Text style={styles.victoryDescription}>
+                  Você completou TODAS as {words.length} palavras do modo sobrevivência!
+                </Text>
+                
+                <Text style={styles.victoryDescription}>
+                  📊 Estatísticas Finais:
+                </Text>
+                
+                <View style={styles.statsContainer}>
+                  <Text style={styles.statItem}>🎯 Palavras Completadas: {words.length}</Text>
+                  <Text style={styles.statItem}>⚡ Tempo Total Bônus: {totalTimeBonus}s</Text>
+                  <Text style={styles.statItem}>🏃‍♂️ Tempo Final: {time}s</Text>
+                </View>
+                
+                <Text style={styles.victoryMessage}>
+                  Você provou ser um verdadeiro campeão da forca!
+                  Poucos jogadores conseguem essa façanha. 🎉
+                </Text>
+              </View>
+              
+              <View style={styles.victoryButtons}>
+                <Button
+                  title="🎮 Jogar Novamente"
+                  onPress={resetGame}
+                  color={palette.primary}
+                />
+                <Button
+                  title="🏠 Menu Principal"
+                  onPress={resetGame}
+                  color={palette.neonAccent}
+                />
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // Tela personalizada de derrota
+  if (gameOver) {
+    const isTimeOut = time >= maxTime;
+    const isSurvivalMode = gameMode === 'survival';
+    
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: palette.background }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <SafeAreaView style={styles.container}>
+              <Text style={[styles.title, { color: palette.warningAccent, fontSize: 28 }]}>
+                {isSurvivalMode ? "💀 FIM DA SOBREVIVÊNCIA 💀" : "⏰ GAME OVER ⏰"}
+              </Text>
+              
+              <View style={styles.defeatContainer}>
+                <Text style={styles.defeatTitle}>
+                  {isSurvivalMode 
+                    ? `${playerName}, sua jornada chegou ao fim!`
+                    : `${playerName}, que pena! Não foi dessa vez.`
+                  }
+                </Text>
+                
+                <Text style={styles.defeatReason}>
+                  {isTimeOut 
+                    ? "⏰ O tempo esgotou!"
+                    : "❌ Muitos erros cometidos!"
+                  }
+                </Text>
+                
+                <Text style={styles.defeatWordReveal}>
+                  🔍 A palavra era: <Text style={styles.revealedWord}>{currentWord.word}</Text>
+                </Text>
+                
+                <Text style={styles.defeatHint}>
+                  💡 Dica: {currentWord.hint}
+                </Text>
+                
+                {isSurvivalMode && (
+                  <View style={styles.survivalStatsContainer}>
+                    <Text style={styles.survivalStatsTitle}>
+                      📊 Sua Performance:
+                    </Text>
+                    <Text style={styles.survivalStat}>
+                      🎯 Palavras Completadas: <Text style={styles.statValue}>{wordsCompleted}</Text>
+                    </Text>
+                    <Text style={styles.survivalStat}>
+                      ⚡ Tempo Bônus Conquistado: <Text style={styles.statValue}>{totalTimeBonus}s</Text>
+                    </Text>
+                    <Text style={styles.survivalStat}>
+                      🏃‍♂️ Tempo de Sobrevivência: <Text style={styles.statValue}>{time}s</Text>
+                    </Text>
+                    <Text style={styles.survivalStat}>
+                      📈 Progresso: <Text style={styles.statValue}>{wordsCompleted}/{words.length}</Text>
+                    </Text>
+                  </View>
+                )}
+                
+                <Text style={styles.encouragementMessage}>
+                  {isSurvivalMode 
+                    ? wordsCompleted > 0 
+                      ? `Parabéns por sobreviver a ${wordsCompleted} palavra${wordsCompleted !== 1 ? 's' : ''}! 💪`
+                      : "Todo campeão começou com uma primeira tentativa! 🌟"
+                    : "Não desista! A prática leva à perfeição! 🎯"
+                  }
+                </Text>
+              </View>
+              
+              <View style={styles.defeatButtons}>
+                <Button
+                  title="🔄 Tentar Novamente"
+                  onPress={() => {
+                    if (isSurvivalMode) {
+                      resetGame(); // Volta ao menu para escolher modo novamente
+                    } else {
+                      setGameOver(false);
+                      startNewGame(); // Nova palavra no modo normal
+                    }
+                  }}
+                  color={palette.primary}
+                />
+                <Button
+                  title="🏠 Menu Principal"
+                  onPress={resetGame}
+                  color={palette.textSecondary}
+                />
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
+    );
+  }
+
   return (
     <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardAvoidingView
@@ -399,7 +567,7 @@ export default function App() {
           <Text style={styles.subtitle}>Jogador: {playerName}</Text>
           {gameMode === 'survival' && (
             <Text style={[styles.subtitle, { color: palette.neonAccent }]}>
-              ⚡ Modo Sobrevivência - Palavras: {wordsCompleted}
+              ⚡ Modo Sobrevivência - Palavras: {wordsCompleted}/{words.length}
             </Text>
           )}
           <Text style={styles.subtitle}>
@@ -594,5 +762,151 @@ const createStyles = (palette: any) => StyleSheet.create({
     width: '100%',
     marginVertical: 10,
     paddingHorizontal: 20,
+  },
+  victoryContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  victoryTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontFamily: FONTS.primary,
+    color: palette.primary,
+  },
+  victoryStats: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontFamily: FONTS.primary,
+    color: palette.neonAccent,
+  },
+  victoryDescription: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 15,
+    fontFamily: FONTS.regular,
+    color: palette.textPrimary,
+    lineHeight: 22,
+  },
+  statsContainer: {
+    backgroundColor: palette.background_darker,
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 15,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: palette.neonAccent,
+  },
+  statItem: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginVertical: 5,
+    fontFamily: FONTS.regular,
+    color: palette.textPrimary,
+  },
+  victoryMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 15,
+    fontFamily: FONTS.regular,
+    color: palette.textSecondary,
+    lineHeight: 20,
+  },
+  victoryButtons: {
+    flexDirection: 'column',
+    gap: 15,
+    width: '80%',
+    marginTop: 20,
+  },
+  defeatContainer: {
+    alignItems: 'center',
+    marginVertical: 20,
+    paddingHorizontal: 20,
+  },
+  defeatTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontFamily: FONTS.primary,
+    color: palette.textPrimary,
+  },
+  defeatReason: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 15,
+    fontFamily: FONTS.primary,
+    color: palette.warningAccent,
+  },
+  defeatWordReveal: {
+    fontSize: 16,
+    textAlign: 'center',
+    marginBottom: 10,
+    fontFamily: FONTS.regular,
+    color: palette.textPrimary,
+  },
+  revealedWord: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    fontFamily: FONTS.primary,
+    color: palette.primary,
+  },
+  defeatHint: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginBottom: 20,
+    fontStyle: 'italic',
+    fontFamily: FONTS.regular,
+    color: palette.textSecondary,
+    lineHeight: 20,
+  },
+  survivalStatsContainer: {
+    backgroundColor: palette.background_darker,
+    borderRadius: 10,
+    padding: 15,
+    marginVertical: 15,
+    width: '100%',
+    borderWidth: 1,
+    borderColor: palette.warningAccent,
+  },
+  survivalStatsTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 10,
+    fontFamily: FONTS.primary,
+    color: palette.primary,
+  },
+  survivalStat: {
+    fontSize: 14,
+    textAlign: 'center',
+    marginVertical: 3,
+    fontFamily: FONTS.regular,
+    color: palette.textPrimary,
+  },
+  statValue: {
+    fontWeight: 'bold',
+    color: palette.neonAccent,
+  },
+  encouragementMessage: {
+    fontSize: 14,
+    textAlign: 'center',
+    fontStyle: 'italic',
+    marginTop: 15,
+    fontFamily: FONTS.regular,
+    color: palette.primary,
+    lineHeight: 20,
+  },
+  defeatButtons: {
+    flexDirection: 'column',
+    gap: 15,
+    width: '80%',
+    marginTop: 20,
   },
 });
