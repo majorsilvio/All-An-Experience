@@ -38,6 +38,7 @@ export default function App() {
   const [nameConfirmed, setNameConfirmed] = useState<boolean>(false);
   const [gameMode, setGameMode] = useState<'normal' | 'survival'>('normal');
   const [modeSelected, setModeSelected] = useState<boolean>(false);
+  const [isVictory, setIsVictory] = useState<boolean>(false);
   const [currentWord, setCurrentWord] = useState<WordItem>({ word: "", hint: "" });
   const [guessedLetters, setGuessedLetters] = useState<Letter[]>([]);
   const [wrongGuesses, setWrongGuesses] = useState<number>(0);
@@ -84,7 +85,7 @@ export default function App() {
   }, [nameConfirmed, modeSelected]);
 
   useEffect(() => {
-    if (!nameConfirmed || !modeSelected || gameOver) return;
+  if (!nameConfirmed || !modeSelected || gameOver || isVictory) return;
 
     if (time >= maxTime) {
       setGameOver(true);
@@ -142,10 +143,10 @@ export default function App() {
     } else {
       // Modo sobrevivência: apenas no início do jogo resetar completamente
       if (wordsCompleted === 0 && time === 0) {
-        // Primeira vez jogando modo sobrevivência
-        setTime(0);
-        setMaxTime(7);
-        setTotalTimeBonus(0);
+  // Primeira vez jogando modo sobrevivência
+  setTime(0);
+  setMaxTime(5);
+  setTotalTimeBonus(0);
       }
       // Para palavras subsequentes, manter o tempo atual e maxTime com bônus
     }
@@ -154,22 +155,22 @@ export default function App() {
   };
 
   const resetGame = () => {
-    // Reset zoom e transformações primeiro
-    resetTransform();
-    
-    setNameConfirmed(false);
-    setModeSelected(false);
-    setGameMode('normal');
-    setWordsCompleted(0);
-    setTotalTimeBonus(0);
-    setTime(0);
-    setMaxTime(60);
-    setGameOver(false);
-    setGuessedLetters([]);
-    setWrongGuesses(0);
-    setCurrentWord({ word: "", hint: "" });
-    setUsedWords([]);
-    setAllWordsCompleted(false);
+  // Reset zoom e transformações primeiro
+  resetTransform();
+  setIsVictory(false);
+  setNameConfirmed(false);
+  setModeSelected(false);
+  setGameMode('normal');
+  setWordsCompleted(0);
+  setTotalTimeBonus(0);
+  setTime(0);
+  setMaxTime(60);
+  setGameOver(false);
+  setGuessedLetters([]);
+  setWrongGuesses(0);
+  setCurrentWord({ word: "", hint: "" });
+  setUsedWords([]);
+  setAllWordsCompleted(false);
   };
 
   const getTimeForWord = (word: string) => {
@@ -207,28 +208,19 @@ export default function App() {
           // Modo sobrevivência: continuar para próxima palavra
           const newWordsCompleted = wordsCompleted + 1;
           setWordsCompleted(newWordsCompleted);
-          
           // Bônus extra por completar a palavra
-          const completionBonus = 5;
-          const letterBonus = Math.ceil(currentWord.word.length / 2);
-          const totalWordBonus = letterBonus + completionBonus;
-          
+          const completionBonus = 3;
           setMaxTime((prev) => prev + completionBonus);
           setTotalTimeBonus((prev) => prev + completionBonus);
-          
           Alert.alert(
             "Palavra completa!",
-            `+${totalWordBonus}s de bônus! Palavras: ${newWordsCompleted}`,
+            `+${completionBonus}s de bônus! Palavras: ${newWordsCompleted}`,
             [{ text: "Próxima palavra", onPress: startNewGame }]
           );
         } else {
-          // Modo normal: fim do jogo
-          setGameOver(true);
-          Alert.alert(
-            "Parabéns!",
-            `${playerName}, você venceu em ${time} segundo${time !== 1 ? "s" : ""}!`,
-            [{ text: "Jogar novamente", onPress: () => resetGame() }]
-          );
+          // Modo normal: fim do jogo - mostrar tela de vitória
+          setIsVictory(true);
+          // Não mostrar Alert, apenas a tela personalizada de vitória
         }
       }
     }
@@ -398,7 +390,7 @@ export default function App() {
     );
   }
 
-  // Tela de parabéns por completar todas as palavras
+  // Tela de parabéns por completar todas as palavras (modo sobrevivência)
   if (allWordsCompleted) {
     return (
       <GestureHandlerRootView style={{ flex: 1 }}>
@@ -408,50 +400,49 @@ export default function App() {
         >
           <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
             <SafeAreaView style={styles.container}>
-              <Text style={[styles.title, { color: palette.primary, fontSize: 28 }]}>
-                🏆 PARABÉNS! 🏆
-              </Text>
-              
+              <Text style={[styles.title, { color: palette.primary, fontSize: 28 }]}>🏆 PARABÉNS! 🏆</Text>
               <View style={styles.victoryContainer}>
-                <Text style={styles.victoryTitle}>
-                  {playerName}, você é um MESTRE das palavras!
-                </Text>
-                
-                <Text style={styles.victoryStats}>
-                  ✨ Conquista Épica Desbloqueada! ✨
-                </Text>
-                
-                <Text style={styles.victoryDescription}>
-                  Você completou TODAS as {words.length} palavras do modo sobrevivência!
-                </Text>
-                
-                <Text style={styles.victoryDescription}>
-                  📊 Estatísticas Finais:
-                </Text>
-                
+                <Text style={styles.victoryTitle}>{playerName}, você é um MESTRE das palavras!</Text>
+                <Text style={styles.victoryStats}>✨ Conquista Épica Desbloqueada! ✨</Text>
+                <Text style={styles.victoryDescription}>Você completou TODAS as {words.length} palavras do modo sobrevivência!</Text>
+                <Text style={styles.victoryDescription}>📊 Estatísticas Finais:</Text>
                 <View style={styles.statsContainer}>
                   <Text style={styles.statItem}>🎯 Palavras Completadas: {words.length}</Text>
                   <Text style={styles.statItem}>⚡ Tempo Total Bônus: {totalTimeBonus}s</Text>
                   <Text style={styles.statItem}>🏃‍♂️ Tempo Final: {time}s</Text>
                 </View>
-                
-                <Text style={styles.victoryMessage}>
-                  Você provou ser um verdadeiro campeão da forca!
-                  Poucos jogadores conseguem essa façanha. 🎉
-                </Text>
+                <Text style={styles.victoryMessage}>Você provou ser um verdadeiro campeão da forca! Poucos jogadores conseguem essa façanha. 🎉</Text>
               </View>
-              
               <View style={styles.victoryButtons}>
-                <Button
-                  title="🎮 Jogar Novamente"
-                  onPress={resetGame}
-                  color={palette.primary}
-                />
-                <Button
-                  title="🏠 Menu Principal"
-                  onPress={resetGame}
-                  color={palette.neonAccent}
-                />
+                <Button title="🎮 Jogar Novamente" onPress={resetGame} color={palette.primary} />
+                <Button title="🏠 Menu Principal" onPress={resetGame} color={palette.neonAccent} />
+              </View>
+            </SafeAreaView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </GestureHandlerRootView>
+    );
+  }
+
+  // Tela de vitória personalizada para modo normal
+  if (isVictory) {
+    return (
+      <GestureHandlerRootView style={{ flex: 1 }}>
+        <KeyboardAvoidingView
+          style={{ flex: 1, backgroundColor: palette.background }}
+          behavior={Platform.OS === "ios" ? "padding" : undefined}
+        >
+          <ScrollView contentContainerStyle={styles.scrollContainer} keyboardShouldPersistTaps="handled">
+            <SafeAreaView style={styles.container}>
+              <Text style={[styles.title, { color: palette.successAccent, fontSize: 28 }]}>🎉 VITÓRIA! 🎉</Text>
+              <View style={styles.victoryContainer}>
+                <Text style={styles.victoryTitle}>{playerName}, você venceu o desafio!</Text>
+                <Text style={styles.victoryStats}>Tempo final: <Text style={{color: palette.primary, fontWeight: 'bold'}}>{time}s</Text></Text>
+                <Text style={styles.victoryMessage}>Parabéns por completar a palavra!</Text>
+              </View>
+              <View style={styles.victoryButtons}>
+                <Button title="🔄 Jogar Novamente" onPress={resetGame} color={palette.primary} />
+                <Button title="🏠 Menu Principal" onPress={resetGame} color={palette.neonAccent} />
               </View>
             </SafeAreaView>
           </ScrollView>
